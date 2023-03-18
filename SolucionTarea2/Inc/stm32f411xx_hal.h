@@ -198,7 +198,7 @@ typedef struct
 	volatile uint32_t BSRR;
 	volatile uint32_t LCKR;
 	volatile uint32_t AFRL;
-	volatile uint32_t AFRH;
+	volatile uint32_t AFRM;
 
 } GPIOx_RegDef_t;
 

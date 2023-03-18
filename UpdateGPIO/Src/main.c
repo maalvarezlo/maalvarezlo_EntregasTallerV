@@ -2,7 +2,7 @@
  ******************************************************************************
  * @file           : main.c
  * @author         : maalvarezlo by STM32CubeIDE
- * @brief          : configuracion basica del proyecto
+ * @brief          : caonfiguracion basica del proyecto
  ******************************************************************************
 
  ******************************************************************************
@@ -10,14 +10,18 @@
 
 #include <stdint.h>
 
-#if !defined(__SOFT_FP__) && defined(__ARM_FP)
-  #warning "FPU is not initialized, but the project is compiling for an FPU. Please initialize the FPU before use."
-#endif
+#include <stm32f4xx.h>
+#include <GPIOxDriver.h>
 
-int main(void)
-{
-    /* Loop forever */
-	while(1);{
 
-	}
+GPIO_Handler_t handlerUserLedPin = {0};
+
+
+int main(void){
+
+
+	// configuracion del timer
+
+
+
 }
