@@ -2,10 +2,10 @@
  * GPIOxDriver.c
  *
  *  Created on: 14/03/2023
- *      Author: mateo
+ *      Author: maalvarezlo
  */
 
-
+#include <stdint.h>
 #include "GPIOxDriver.h"
 
 /*
@@ -114,10 +114,10 @@ void GPIO_Config (GPIO_Handler_t *pGPIOHandler){
 			auxPosition = 4 * (pGPIOHandler ->GPIO_PinConfig.GPIO_PinNumber -8);
 
 			// Limpiamos primero la posicion del registro que deseamos escribir a continuacion
-			pGPIOHandler->pGPIOx->AFRM &= ~(0b111 << auxPosition);
+			pGPIOHandler->pGPIOx->AFRH &= ~(0b111 << auxPosition);
 
 			// Y escribimos el valor configurado en la posicion seleccionada
-			pGPIOHandler->pGPIOx->AFRM |= (pGPIOHandler ->GPIO_PinConfig.GPIO_PinAltFunMode << auxPosition);
+			pGPIOHandler->pGPIOx->AFRH |= (pGPIOHandler ->GPIO_PinConfig.GPIO_PinAltFunMode << auxPosition);
 
 		}
 	}
@@ -129,7 +129,7 @@ void GPIO_Config (GPIO_Handler_t *pGPIOHandler){
  */
 void GPIO_WritePin(GPIO_Handler_t *pPinHandler, uint8_t newState){
 	// Limpiamos la posicion que deseamos
-	// pPinHandler -> pGPIOx -> ODR &= ~(SET << pPinHandler -> GPIO_PinConfig.GPIO_PinNumber):
+	// pPinHandler -> pGPIOx -> ODR &= ~(SET << pPinHandler -> GPIO_PinConfig.GPIO_PinNumber);
 	if (newState == SET){
 		// Trabajando con la parte baja del registro
 		pPinHandler ->pGPIOx ->BSRR |= (SET << pPinHandler ->GPIO_PinConfig.GPIO_PinNumber);
@@ -149,9 +149,25 @@ uint32_t GPIO_ReadPin(GPIO_Handler_t *pPinHandler){
 	uint32_t pinValue = 0;
 
 	// Cargaremos el valor del registro IDR, desplazado a derecha tantas veces como la ubicacion
-	// del pin especifico
+	// del pin especifico con el objetivo de dejar el bit deseado en la posicion 0
 	pinValue = (pPinHandler ->pGPIOx ->IDR >> pPinHandler ->GPIO_PinConfig.GPIO_PinNumber);
+	// Sabiendo que el bit se encuentra en la posicion 0, creamos una mascara 0b01 con la operación And (&)
+	//para solo dejar el valor de la posicion 0
+	pinValue &= 0b01;
 
+	//Retornara un 0 o un 1
 	return pinValue;
+}
+
+void GPIOxTooglePin(GPIO_Handler_t *pPinHandler){
+	// Se usan condicionales para cambiar el valor del pin leido, si la funcion GPIO_ReadPin retorna un 0 entonces se
+	// cambiara ese valor por un 1 con la funcion GPIO_WritePin y el valor SET, mientras que con el Else pasará lo
+	// contrario
+	if (GPIO_ReadPin(pPinHandler) == 0){
+		GPIO_WritePin(pPinHandler, SET);
+	}
+	else{
+		GPIO_WritePin(pPinHandler, RESET);
+	}
 }
 

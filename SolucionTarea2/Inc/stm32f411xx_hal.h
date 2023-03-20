@@ -198,7 +198,7 @@ typedef struct
 	volatile uint32_t BSRR;
 	volatile uint32_t LCKR;
 	volatile uint32_t AFRL;
-	volatile uint32_t AFRM;
+	volatile uint32_t AFRH;
 
 } GPIOx_RegDef_t;
 
@@ -236,35 +236,35 @@ typedef struct
 /* 8.4.3 GPIOx_moder (dos bits por cada pin*/
 
 #define GPIO_OSPEED_LOW         0
-#define GPIO_OSPEED_MEDIUM      0
-#define GPIO_OSPEED_FAST        0
-#define GPIO_OSPEED_HIGH        0
+#define GPIO_OSPEED_MEDIUM      1
+#define GPIO_OSPEED_FAST        2
+#define GPIO_OSPEED_HIGH        3
 
 /* 8.4.3 GPIOx_moder (dos bits por cada pin*/
 
 #define GPIO_PUPDR_NOTHING          0
-#define GPIO_PUPDR_PULLUP           0
-#define GPIO_PUPDR_PULLDOWN         0
-#define GPIO_PUPDR_RESERVED         0
+#define GPIO_PUPDR_PULLUP           1
+#define GPIO_PUPDR_PULLDOWN         2
+#define GPIO_PUPDR_RESERVED         3
 
 
 /*DEFINICION DE LO NOMBRES DE LOS PINES*/
 #define PIN_0           0
-#define PIN_1           0
-#define PIN_2           0
-#define PIN_3           0
-#define PIN_4           0
-#define PIN_5           0
-#define PIN_6           0
-#define PIN_7           0
-#define PIN_8           0
-#define PIN_9           0
-#define PIN_10          0
-#define PIN_11          0
-#define PIN_12          0
-#define PIN_13          0
-#define PIN_14          0
-#define PIN_15          0
+#define PIN_1           1
+#define PIN_2           2
+#define PIN_3           3
+#define PIN_4           4
+#define PIN_5           5
+#define PIN_6           6
+#define PIN_7           7
+#define PIN_8           8
+#define PIN_9           9
+#define PIN_10          10
+#define PIN_11          11
+#define PIN_12          12
+#define PIN_13          13
+#define PIN_14          14
+#define PIN_15          15
 
 /* definicion de las funciones alternativas */
 #define AF0      0b0000
