@@ -5,7 +5,7 @@
  *      Author: mateo
  */
 
-#include <stdint.h>
+
 #include "GPIOxDriver.h"
 
 /*
@@ -104,10 +104,10 @@ void GPIO_Config (GPIO_Handler_t *pGPIOHandler){
 			auxPosition = 4 * pGPIOHandler -> GPIO_PinConfig.GPIO_PinNumber;
 
 			// Limpiamos primero la posicion del registro que deseamos escribir a continuacion
-			pGPIOHandler -> pGPIOx -> AFR[0] &= ~(0b111 << auxPosition);
+			pGPIOHandler->pGPIOx->AFR[0] &= ~(0b111 << auxPosition);
 
 			// Y escribimos el valor configurado en la posicion seleccionada
-			pGPIOHandler -> pGPIOx -> AFR[0] |= ( pGPIOHandler -> GPIO_PinConfig.GPIO_PinAltFunMode << auxPosition);
+			pGPIOHandler->pGPIOx->AFR[0] |= ( pGPIOHandler -> GPIO_PinConfig.GPIO_PinAltFunMode << auxPosition);
 		}
 		else{
 			// Estamos en el registro AFRH, que controla los pines del PIN_8 al PIN_15
@@ -124,12 +124,12 @@ void GPIO_Config (GPIO_Handler_t *pGPIOHandler){
 }  // Fin del GPIO_config
 
 /**
- *  Función utilizada para cambiar de estado el pin entregado en el handler, asignando
+ *  Función utiliada para cambiar de estado el pin entregado en el handler, asignando
  *  el valor entregado en la variable newState
  */
 void GPIO_WritePin(GPIO_Handler_t *pPinHandler, uint8_t newState){
 	// Limpiamos la posicion que deseamos
-	// pPinHandler -> pGPIOx -> ODR &= ~(SET << pPinHandler -> GPIO_PinConfig.GPIO_PinNumber);
+	// pPinHandler -> pGPIOx -> ODR &= ~(SET << pPinHandler -> GPIO_PinConfig.GPIO_PinNumber):
 	if (newState == SET){
 		// Trabajando con la parte baja del registro
 		pPinHandler ->pGPIOx ->BSRR |= (SET << pPinHandler ->GPIO_PinConfig.GPIO_PinNumber);

@@ -145,25 +145,7 @@ void BasicTimer_Config(BasicTimer_Handler_t *ptrBTimerHandler){
 	__enable_irq();
 }
 
-__attribute__((weak)) void BasicTimer2_Callback(void){
-	  /* NOTE : This function should not be modified, when the callback is needed,
-	            the BasicTimerX_Callback could be implemented in the main file
-	   */
-	__NOP();
-}
-__attribute__((weak)) void BasicTimer3_Callback(void){
-	  /* NOTE : This function should not be modified, when the callback is needed,
-	            the BasicTimerX_Callback could be implemented in the main file
-	   */
-	__NOP();
-}
-__attribute__((weak)) void BasicTimer4_Callback(void){
-	  /* NOTE : This function should not be modified, when the callback is needed,
-	            the BasicTimerX_Callback could be implemented in the main file
-	   */
-	__NOP();
-}
-__attribute__((weak)) void BasicTimer5_Callback(void){
+__attribute__((weak)) void BasicTimerX_Callback(void){
 	  /* NOTE : This function should not be modified, when the callback is needed,
 	            the BasicTimerX_Callback could be implemented in the main file
 	   */
@@ -177,36 +159,33 @@ __attribute__((weak)) void BasicTimer5_Callback(void){
  * el sistema inmediatamente salta a este lugar en la memoria*/
 void TIM2_IRQHandler(void){
 	/* Limpiamos la bandera que indica que la interrupción se ha generado */
-	TIM2->SR &= ~TIM_SR_UIF;
+	ptrTimerUsed->SR &= ~TIM_SR_UIF;
 
 	/* LLamamos a la función que se debe encargar de hacer algo con esta interrupción*/
-	BasicTimer2_Callback();
+	//BasicTimer2_Callback();
 
 }
 void TIM3_IRQHandler(void){
 	/* Limpiamos la bandera que indica que la interrupción se ha generado */
-	TIM3->SR &= ~TIM_SR_UIF;
+	ptrTimerUsed->SR &= ~TIM_SR_UIF;
 
 	/* LLamamos a la función que se debe encargar de hacer algo con esta interrupción*/
-	BasicTimer3_Callback();
+	//BasicTimer3_Callback();
 
 }
 void TIM4_IRQHandler(void){
 	/* Limpiamos la bandera que indica que la interrupción se ha generado */
-	TIM4->SR &= ~TIM_SR_UIF;
+	ptrTimerUsed->SR &= ~TIM_SR_UIF;
 
 	/* LLamamos a la función que se debe encargar de hacer algo con esta interrupción*/
-	BasicTimer4_Callback();
+	//BasicTimer4_Callback();
 
 }
 void TIM5_IRQHandler(void){
 	/* Limpiamos la bandera que indica que la interrupción se ha generado */
-	TIM5->SR &= ~TIM_SR_UIF;
+	ptrTimerUsed->SR &= ~TIM_SR_UIF;
 
 	/* LLamamos a la función que se debe encargar de hacer algo con esta interrupción*/
-	BasicTimer5_Callback();
+	//BasicTimer5_Callback();
 
-}
-void BasicTimer_Callback(void){
-	__NOP();
 }
