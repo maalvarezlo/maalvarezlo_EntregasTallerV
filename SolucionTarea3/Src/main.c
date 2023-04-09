@@ -149,7 +149,7 @@ int main(void){
 /**/
 void init_hardware (void){
 
-/*Configuracion del LED del blinky en el puesto PB10 */
+/*Configuracion del LED del blinky en el puesto PA5 */
 	handlerLEDBlinky.pGPIOx = GPIOA;
 	handlerLEDBlinky.GPIO_PinConfig.GPIO_PinNumber           = PIN_5;
 	handlerLEDBlinky.GPIO_PinConfig.GPIO_PinMode             = GPIO_MODE_OUT;
@@ -254,7 +254,7 @@ Display es catodo comun)*/
 	GPIO_WritePin(&handlerLEDf, SET);
 	GPIO_WritePin(&handlerLEDg, SET);
 
-/* Configurando todos los punes del encoder*/
+/* Configurando todos los pines del encoder*/
 	// Pin del clock PB3
 	handlerEncoderCLK.pGPIOx = GPIOB;
 	handlerEncoderCLK.GPIO_PinConfig.GPIO_PinNumber			= PIN_3;
@@ -315,7 +315,7 @@ Display es catodo comun)*/
 
 } // Termina el int_Hardware
 
-
+// Aca se encienden los led respectivos a cada numero
 void Encender_Display(uint8_t numero){
 	// apagando todos los led
 	GPIO_WritePin(&handlerLEDa, RESET);
@@ -397,6 +397,7 @@ void Encender_Display(uint8_t numero){
 	}
 } //Termina el Encerder_Display
 
+// Aca se enciende cada led de la secuencia de la culebrita
 void Encender_Culebra(uint8_t numero2){
 	// apagando todos los led
 	GPIO_WritePin(&handlerLEDa, RESET);
@@ -452,7 +453,7 @@ void BasicTimer2_Callback(void){
 	GPIOxTooglePin(&handlerLEDBlinky);
 }
 
-
+// timer para que el display parpadee muy rapido
 void BasicTimer3_Callback(void){
 	banderaDisplay = 1; // se levanta una bandera para que se ejecute el codigo del display
 }
