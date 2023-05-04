@@ -14,8 +14,11 @@
 #include "GPIOxDriver.h"
 #include "BasicTimer.h"
 #include "ExtiDriver.h"
+#include "USARTxDriver.h"
+
 
 /* Definicion de los elementos del sistema */
+
 // Handlers de los pines
 GPIO_Handler_t handlerLEDBlinky          = {0};
 GPIO_Handler_t handlerpinEXTI            = {0};
@@ -27,6 +30,10 @@ BasicTimer_Handler_t handlerBlinkyTimer  = {0};
 
 // Extis
 EXTI_Config_t Exti                       = {0};
+
+
+// Comunicacion USART
+USART_Handler_t Usart2Comm = {0};
 
 
 //Definiendo las Funciones
@@ -78,9 +85,19 @@ void init_hardware (void){
 	BasicTimer_Config(&handlerBlinkyTimer);
 
 // Configurando la interrucion del EXTI
-	Exti.edgeType                                 = EXTERNAL_INTERRUPT_FALLING_EDGE;
-	Exti.pGPIOHandler                             = &handlerpinEXTI;
+	Exti.edgeType                                           = EXTERNAL_INTERRUPT_FALLING_EDGE;
+	Exti.pGPIOHandler                                       = &handlerpinEXTI;
 	extInt_Config(&Exti);
+
+	/* Configuracion de la comunicacion serial USART*/
+	Usart2Comm.ptrUSARTx = USART2;
+	Usart2Comm.USART_Config.USART_baudrate                   = USART_BAUDRATE_115200;
+	Usart2Comm.USART_Config.USART_datasize                   = USART_DATASIZE_8BIT;
+	Usart2Comm.USART_Config.USART_mode                       = USART_MODE_RXTX;
+	Usart2Comm.USART_Config.USART_parity                     = USART_PARITY_NONE;
+	Usart2Comm.USART_Config.USART_stopbits                   = USART_STOPBIT_1;
+
+	USART_Config(&Usart2Comm);
 
 } // Termina el int_Hardware
 
