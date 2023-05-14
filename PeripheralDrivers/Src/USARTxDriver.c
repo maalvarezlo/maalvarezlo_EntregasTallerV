@@ -13,10 +13,10 @@
  * Recordar que siempre se debe comenzar con activar la señal de reloj
  * del periferico que se está utilizando.
  */
-void USART_Config(USART_Handler_t *ptrUsartHandler){
 
-	/* Desactivamos las interrupciones globales mientras configuramos el sistema*/
-	__disable_irq();
+uint8_t auxRxData = 0;
+
+void USART_Config(USART_Handler_t *ptrUsartHandler){
 
 	/* 1. Activamos la señal de reloj que viene desde el BUS al que pertenece el periferico */
 	/* Lo debemos hacer para cada uno de las pisbles opciones que tengamos (USART1, USART2, USART6) */
@@ -26,7 +26,7 @@ void USART_Config(USART_Handler_t *ptrUsartHandler){
 		RCC->APB2ENR &= ~RCC_APB2ENR_USART1EN;
 		RCC->APB2ENR |= RCC_APB2ENR_USART1EN;
 	}
-	
+
     /* 1.2 Configuramos el USART2 */
     // Escriba acá su código
 	else if(ptrUsartHandler->ptrUSARTx == USART2){
@@ -34,13 +34,16 @@ void USART_Config(USART_Handler_t *ptrUsartHandler){
 		RCC->APB1ENR &= ~RCC_APB1ENR_USART2EN;
 		RCC->APB1ENR |= RCC_APB1ENR_USART2EN;
 	}
-    
+
     /* 1.3 Configuramos el USART6 */
     // Escriba acá su código
 	else if(ptrUsartHandler->ptrUSARTx == USART6){
 
 		RCC->APB2ENR &= ~RCC_APB2ENR_USART6EN;
 		RCC->APB2ENR |= RCC_APB2ENR_USART6EN;
+	}
+	else{
+		__NOP();
 	}
 
 
@@ -65,7 +68,7 @@ void USART_Config(USART_Handler_t *ptrUsartHandler){
 			// Es even, entonces cargamos la configuracion adecuada
 			// Escriba acá su código
 			ptrUsartHandler->ptrUSARTx->CR1 &= ~USART_CR1_PS;
-			
+
 		}else{
 			// Si es "else" significa que la paridad seleccionada es ODD, y cargamos esta configuracion
 			// Escriba acá su código
@@ -82,10 +85,16 @@ void USART_Config(USART_Handler_t *ptrUsartHandler){
 	if(ptrUsartHandler->USART_Config.USART_datasize == USART_DATASIZE_8BIT){
 		ptrUsartHandler->ptrUSARTx->CR1 &= ~USART_CR1_M; // 8 bits
 	}
-	else{
-		// si son 9 bits ponemos un 1 en es registro
+	//si son 9 bits o si son 8 y con paridad activada
+	else if((ptrUsartHandler->USART_Config.USART_datasize == USART_DATASIZE_9BIT) || ((ptrUsartHandler->USART_Config.USART_parity != USART_PARITY_NONE)
+				&&(ptrUsartHandler->USART_Config.USART_datasize == USART_DATASIZE_8BIT))){
+		//se pone 1 en el registro
 		ptrUsartHandler->ptrUSARTx->CR1 |= USART_CR1_M;
 	}
+
+
+
+
 
 
 	// 2.4 Configuramos los stop bits (SFR USART_CR2)
@@ -145,7 +154,7 @@ void USART_Config(USART_Handler_t *ptrUsartHandler){
 		// El valor a cargar es 8.6875 -> Mantiza = 8,fraction = 0.6875
 		// Mantiza = 8 = 0x8, fraction = 16 * 0.6875 = 11
 		// Valor a cargar 0x08B
-		ptrUsartHandler->ptrUSARTx->BRR = 0x08B;
+		ptrUsartHandler->ptrUSARTx->BRR = 0x008B;
 	}
 
 	// 2.6 Configuramos el modo: TX only, RX only, RXTX, disable
@@ -154,6 +163,7 @@ void USART_Config(USART_Handler_t *ptrUsartHandler){
 	{
 		// Activamos la parte del sistema encargada de enviar
 		// Escriba acá su código
+		ptrUsartHandler->ptrUSARTx->CR1 &= ~USART_CR1_TE;
 		ptrUsartHandler->ptrUSARTx->CR1 |= USART_CR1_TE;
 		break;
 	}
@@ -161,6 +171,7 @@ void USART_Config(USART_Handler_t *ptrUsartHandler){
 	{
 		// Activamos la parte del sistema encargada de recibir
 		// Escriba acá su código
+		ptrUsartHandler->ptrUSARTx->CR1 &= ~USART_CR1_RE;
 		ptrUsartHandler->ptrUSARTx->CR1 |= USART_CR1_RE;
 		break;
 	}
@@ -168,6 +179,8 @@ void USART_Config(USART_Handler_t *ptrUsartHandler){
 	{
 		// Activamos ambas partes, tanto transmision como recepcion
 		// Escriba acá su código
+		ptrUsartHandler->ptrUSARTx->CR1 &= ~USART_CR1_RE;
+		ptrUsartHandler->ptrUSARTx->CR1 &= ~USART_CR1_TE;
 		ptrUsartHandler->ptrUSARTx->CR1 |= (USART_CR1_TE | USART_CR1_RE);
 		break;
 	}
@@ -180,7 +193,7 @@ void USART_Config(USART_Handler_t *ptrUsartHandler){
 		ptrUsartHandler->ptrUSARTx->CR1 &= ~USART_CR1_UE;
 		break;
 	}
-	
+
 	default:
 	{
 		// Actuando por defecto, desactivamos ambos canales
@@ -195,14 +208,49 @@ void USART_Config(USART_Handler_t *ptrUsartHandler){
 	if(ptrUsartHandler->USART_Config.USART_mode != USART_MODE_DISABLE){
 		// Escriba acá su código
 		ptrUsartHandler->ptrUSARTx->CR1 |= USART_CR1_UE;
+
 	}
 	else {
 		ptrUsartHandler->ptrUSARTx->CR1 &= ~USART_CR1_UE;
 	}
-}
+
+
+	/* 2.8 Activando las interrupciones*/
+	__disable_irq();
+
+	// Recepcion
+	if(ptrUsartHandler->USART_Config.USART_enableIntRX == USART_RX_INTERRUPT_ENABLE){
+		ptrUsartHandler->ptrUSARTx->CR1 |= USART_CR1_RXNEIE;
+	}
+	else {
+		ptrUsartHandler->ptrUSARTx->CR1 &= ~USART_CR1_RXNEIE;
+	}
+	// Transmision
+	if(ptrUsartHandler->USART_Config.USART_enableIntTX == USART_TX_INTERRUPT_ENABLE){
+		ptrUsartHandler->ptrUSARTx->CR1 |= USART_CR1_TXEIE;
+	}
+	else {
+		ptrUsartHandler->ptrUSARTx->CR1 &= ~USART_CR1_TXEIE;
+	}
+
+	//Matriculamos el NVIC
+	if(ptrUsartHandler->ptrUSARTx == USART1){
+		__NVIC_EnableIRQ(USART1_IRQn);
+	}
+	else if(ptrUsartHandler->ptrUSARTx == USART2){
+		__NVIC_EnableIRQ(USART2_IRQn);
+	}
+	else if(ptrUsartHandler->ptrUSARTx == USART6){
+		__NVIC_EnableIRQ(USART6_IRQn);
+	}
+
+	__enable_irq();
+
+} //FIN del USART config
+
 
 /* funcion para escribir un solo char */
-int writeChar(USART_Handler_t *ptrUsartHandler, int dataToSend ){
+int writeChar(USART_Handler_t *ptrUsartHandler, char dataToSend ){
 	while( !(ptrUsartHandler->ptrUSARTx->SR & USART_SR_TXE)){
 		__NOP();
 	}
@@ -211,4 +259,71 @@ int writeChar(USART_Handler_t *ptrUsartHandler, int dataToSend ){
 	ptrUsartHandler->ptrUSARTx->DR = dataToSend;
 
 	return dataToSend;
+}
+
+/** Funcion para escribir todo un string */
+void writeMsg(USART_Handler_t *ptrUsartHandler, char *msgToSend){
+	int caracter = 0;
+	while(msgToSend[caracter] != '\0'){
+		writeChar(ptrUsartHandler, msgToSend[caracter]);
+		caracter++;
+	}
+}
+
+
+
+
+
+/** Función para recibir datos */
+uint8_t getRxData(void){
+
+	return auxRxData;
+}
+
+
+/* handler de la interrupción del USART1 */
+void USART1_IRQHandler(void){
+	// Evaluamos si la interrupción que se dio es por RX
+	if(USART1->SR & USART_SR_RXNE){
+		auxRxData = (uint8_t) USART1->DR;
+		usart1Rx_Callback();
+	}
+}
+
+/* handler de la interrupción del USART2 */
+void USART2_IRQHandler(void){
+	// Evaluamos si la interrupción que se dio es por RX
+	if(USART2->SR & USART_SR_RXNE){
+		auxRxData = (uint8_t) USART2->DR;
+		usart2Rx_Callback();
+	}
+}
+
+/* handler de la interrupción del USART6 */
+void USART6_IRQHandler(void){
+	// Evaluamos si la interrupción que se dio es por RX
+	if(USART6->SR & USART_SR_RXNE){
+		auxRxData = (uint8_t) USART6->DR;
+		usart6Rx_Callback();
+	}
+}
+
+/** Funciones callback weak, que pueden ser sobre-escritas*/
+__attribute__((weak)) void usart1Rx_Callback(void){
+		/* 	NOTE: This function should not be modified, when the callback is needed,
+		  		  the BasicTimer_Callback could be implemented in the main file
+		 */
+	__NOP();
+}
+__attribute__((weak)) void usart2Rx_Callback(void){
+		/* 	NOTE: This function should not be modified, when the callback is needed,
+		  		  the BasicTimer_Callback could be implemented in the main file
+		 */
+	__NOP();
+}
+__attribute__((weak)) void usart6Rx_Callback(void){
+		/* 	NOTE: This function should not be modified, when the callback is needed,
+		  		  the BasicTimer_Callback could be implemented in the main file
+		 */
+	__NOP();
 }
