@@ -3,7 +3,7 @@
  * @file           : main.c
  * @author         : maalvarezlo by STM32CubeIDE
  * @Nombre          : Mateo Alvarez Lopera
- * @brief          : main configiguracion basica Lib externas
+ * @brief          : seno ARM Funcion
  ******************************************************************************
 
  ******************************************************************************
@@ -11,11 +11,15 @@
 
 #include <stdint.h>
 #include <stm32f4xx.h>
+
 #include "GPIOxDriver.h"
 #include "BasicTimer.h"
 #include "ExtiDriver.h"
 #include "USARTxDriver.h"
+
 #include <math.h>
+
+#include "arm_math.h"
 
 
 /* Definicion de los elementos del sistema */
@@ -42,11 +46,17 @@ GPIO_Handler_t handlerPinTX              = {0};
 GPIO_Handler_t handlerPinRX              = {0};
 uint16_t printMSJ                        = 0;
 uint8_t usart2DataReceived               = 0;
-char mensaje[]                           = "\nPrueba de Sonido!\n";
+
 char bufferMsj[64]                       = {0};
 
+/*Pruebas de libreria CMSIS*/
+float32_t srcNumber[4] = {-0.212, 45.444, -45.23, -23234.423423};
+float32_t destNumber[4] = {0};
+uint32_t dataSize = 0;
 
-//Variables
+//Variables para usar sen
+float32_t sineValue = 0;
+float32_t sineArgValue = 0;
 
 
 //Definiendo las Funciones
@@ -62,21 +72,43 @@ int main(void){
 
 	while(1){
 
-		//Con este if se imprime consecutivamente cada vez que el timer3 se se repite 4 veces
-		if(printMSJ ==  4){
+		if(usart2DataReceived == 'A'){
+			//dataSize = sizeof(srcNumber); no funciona
+			dataSize = 4;
+			arm_abs_f32(srcNumber, destNumber, dataSize);
 
-			sprintf(bufferMsj, "el valor de printMSJ = %#.3f \n", M_PI);
-
+			sprintf(bufferMsj, "Valor Absoluto de %#.2f = %#.2f \n", srcNumber[0], destNumber[0]);
 			writeMsg(&Usart2Comm, bufferMsj);
 
-			printMSJ = 0;
+			sprintf(bufferMsj, "Valor Absoluto de %#.2f = %#.2f \n", srcNumber[1], destNumber[1]);
+			writeMsg(&Usart2Comm, bufferMsj);
+
+			sprintf(bufferMsj, "Valor Absoluto de %#.2f = %#.2f \n", srcNumber[2], destNumber[2]);
+			writeMsg(&Usart2Comm, bufferMsj);
+
+			sprintf(bufferMsj, "Valor Absoluto de %#.2f = %#.2f \n", srcNumber[3], destNumber[3]);
+			writeMsg(&Usart2Comm, bufferMsj);
+
+			usart2DataReceived = '\0';
 		}
 
-		// Este if es para que cuando se de la interrupcion de una tecla se mande dicha tecla
-		// por usart IMPORTANTEEEEEEE
-		if(usart2DataReceived != '\0'){
-			sprintf(bufferMsj, "%c", usart2DataReceived);
+		if(usart2DataReceived == 'B'){
+			sineArgValue = M_PI/4;
+			sineValue  = arm_sin_f32(sineArgValue);
+
+			sprintf(bufferMsj, "El Seno de %#.2f = %#.6f \n", sineArgValue, sineValue);
 			writeMsg(&Usart2Comm, bufferMsj);
+
+			usart2DataReceived = '\0';
+		}
+
+		if(usart2DataReceived == 'C'){
+			sineArgValue = M_PI/8;
+			sineValue  = arm_sin_f32(sineArgValue);
+
+			sprintf(bufferMsj, "El Seno de %#.2f = %#.6f \n", sineArgValue, sineValue);
+			writeMsg(&Usart2Comm, bufferMsj);
+
 			usart2DataReceived = '\0';
 		}
 
