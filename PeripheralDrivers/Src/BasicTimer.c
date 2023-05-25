@@ -67,6 +67,7 @@ void BasicTimer_Config(BasicTimer_Handler_t *ptrBTimerHandler){
 	/* Escriba codigo aca */
 	ptrBTimerHandler->ptrTIMx->PSC = ptrBTimerHandler->TIMx_Config.TIMx_speed;
 
+
 	/* 3. Configuramos la dirección del counter (up/down)*/
 	if(ptrBTimerHandler->TIMx_Config.TIMx_mode == BTIMER_MODE_UP){
 

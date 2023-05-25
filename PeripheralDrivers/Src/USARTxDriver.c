@@ -157,6 +157,15 @@ void USART_Config(USART_Handler_t *ptrUsartHandler){
 		ptrUsartHandler->ptrUSARTx->BRR = 0x008B;
 	}
 
+	// Ver tabla de valores (Tabla 73), Frec = 80MHz
+	else if(ptrUsartHandler->USART_Config.USART_baudrate == USART_BAUDRATE_115200_80MHz){
+		// Escriba acá su código y los comentarios que faltan
+		// El valor a cargar es 43.40278 -> Mantiza = 43, fraction = 0.40278
+		// Mantiza = 43 = 0x2B, fraction = 16 * 0.40278 = 6
+		// Valor a cargar 0x02B6
+		ptrUsartHandler->ptrUSARTx->BRR = 0x15B;
+	}
+
 	// 2.6 Configuramos el modo: TX only, RX only, RXTX, disable
 	switch(ptrUsartHandler->USART_Config.USART_mode){
 	case USART_MODE_TX:
