@@ -107,7 +107,8 @@ void configPLL(PLL_Handler_t *ptrHandlerPLL){
 		// se activa el HSI, el cual es la velocidad por defecto del clock
 		RCC->CFGR &= ~RCC_CFGR_SW; // ponemos el SW en HSI (los bits en 0 ambos)
 	}
-
-
 } // FIN configPLL
+void getConfigPLL(){
+
+}
 
