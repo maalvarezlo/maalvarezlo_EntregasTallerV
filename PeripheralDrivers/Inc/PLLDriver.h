@@ -21,6 +21,6 @@ typedef struct
 
 //prototipo de las funciones publicas
 void configPLL(PLL_Handler_t *ptrHandlerPLL);
-void getConfigPLL(void);
+int getConfigPLL(void);
 
 #endif /* PLLDRIVER_H_ */

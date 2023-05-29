@@ -60,11 +60,11 @@ uint16_t DuttyZ                = 0;
 
 
 // Comunicacion USART
-USART_Handler_t Usart2Comm               = {0};
+USART_Handler_t UsartComm               = {0};
 GPIO_Handler_t handlerPinTX              = {0};
 GPIO_Handler_t handlerPinRX              = {0};
 uint16_t printMSJ                        = 0;
-uint8_t usart2DataReceived               = 0;
+uint8_t usartDataReceived               = 0;
 char bufferMsj[64]                       = {0};
 char bufferMsj2[64]                      = {0};
 float ArregloX[2000]                     ={0};
@@ -86,21 +86,24 @@ uint8_t i2cBuffer    = 0;
 #define ACCEL_YOUT_H             53
 #define ACCEL_ZOUT_L             54
 #define ACCEL_ZOUT_H             55
-
 #define BW_RATE                  44
-
 #define POWER_CTL                45
 #define WHO_AM_I                 0
-
-
-
-
-
 
 
 //Definiendo las Funciones
 void init_hardware (void);
 void Loop_Principal(void);
+void Menu(void);
+void Press_w(void);
+void Press_p(void);
+void Press_r(void);
+void Press_x(void);
+void Press_y(void);
+void Press_z(void);
+void Press_d(void);
+void Press_l(void);
+
 
 
 int main(void){
@@ -108,174 +111,51 @@ int main(void){
 	SCB->CPACR |= (0xF <<20);
 /*Inicialización de todos los elementos del sistema*/
 	init_hardware();
+	Menu();
+
 	while(1){
 
+		//aca se activa un muestreo constante a 1KHz, no se imprimen los valores para que no estorben
+		//en el coolterm, sin embargo tambien se varia el dutty del PWM asique cuando se mueve el
+		//acelerometro se pueden ver comovarian de intensidad 3 leds colocados en la protoboard
 		Loop_Principal();
-//		banderaMuestreo = 1;
-//		while (infinito < 2000) {
-//			uint8_t AccelX_low = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_XOUT_L);
-//			uint8_t AccelX_high = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_XOUT_H);
-//			int16_t AccelX = AccelX_high << 8 | AccelX_low;
-//
-//			uint8_t AccelY_low = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_YOUT_L);
-//			uint8_t AccelY_high = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_YOUT_H);
-//			int16_t AccelY = AccelY_high << 8 | AccelY_low;
-//
-//			uint8_t AccelZ_low = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_ZOUT_L);
-//			uint8_t AccelZ_high = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_ZOUT_H);
-//			int16_t AccelZ = AccelZ_high << 8 | AccelZ_low;
-//
-//			infinito = 0; // para que nunca salga del while hasta que se precione otra tecla
-//
-//			DuttyX = 1000 * ((AccelX / 256.f) * 9.78) + 10000;
-//			updateDuttyCycle(&handerPWMX, DuttyX);
-//			DuttyY = 1000 * ((AccelY / 256.f) * 9.78) + 10000;
-//			updateDuttyCycle(&handerPWMY, DuttyY);
-//			DuttyZ = 1000 * ((AccelZ / 256.f) * 9.78) + 10000;
-//			updateDuttyCycle(&handerPWMZ, DuttyZ);
-//
-//			if (usart2DataReceived != '\0') {
-//				infinito = 2000;
-//			}
-//		}
-//		banderaMuestreo = 0;
-//		infinito = 0;
 
-		if(usart2DataReceived != '\0'){
-			if(usart2DataReceived == 'w'){
-
-				sprintf(bufferMsj, "WHO_AM_I? (r)\n");
-				writeMsg(&Usart2Comm, bufferMsj);
-
-				i2cBuffer = i2c_readSingleRegister(&handlerAccelerometer, WHO_AM_I);
-				sprintf(bufferMsj, "dataRead = 0x%x \n", (unsigned int) i2cBuffer);
-				writeMsg(&Usart2Comm, bufferMsj);
-				usart2DataReceived = '\0';
+		if(usartDataReceived != '\0'){
+			if(usartDataReceived == 'm'){
+				Menu();
 			}
-			else if (usart2DataReceived == 'p'){
-				sprintf(bufferMsj, "PWR_MGMT_1 state (r)\n");
-				writeMsg(&Usart2Comm, bufferMsj);
-
-				i2cBuffer = i2c_readSingleRegister(&handlerAccelerometer, POWER_CTL);
-				sprintf(bufferMsj, "dataRead = 0x%x \n", (unsigned int) i2cBuffer);
-				writeMsg(&Usart2Comm, bufferMsj);
-				usart2DataReceived = '\0';
+			if(usartDataReceived == 'w'){
+				Press_w();
 			}
-			else if (usart2DataReceived == 'r'){
-				sprintf(bufferMsj, "PWR_MGMT_1 reset (w)\n");
-				writeMsg(&Usart2Comm, bufferMsj);
-
-				i2c_writeSingleRegister(&handlerAccelerometer, POWER_CTL , 0x2D);
-				usart2DataReceived = '\0';
+			else if (usartDataReceived == 'p'){
+				Press_p();
 			}
-			else if (usart2DataReceived == 'x'){
-				sprintf(bufferMsj, "Axis X data (r) \n");
-				writeMsg(&Usart2Comm, bufferMsj);
-
-				uint8_t AccelX_low =  i2c_readSingleRegister(&handlerAccelerometer, ACCEL_XOUT_L);
-				uint8_t AccelX_high = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_XOUT_H);
-				int16_t AccelX = AccelX_high << 8 | AccelX_low;
-				sprintf(bufferMsj, "AccelX = %.2f \n", (AccelX/256.f)*9.78);
-				writeMsg(&Usart2Comm, bufferMsj);
-				usart2DataReceived = '\0';
+			else if (usartDataReceived == 'r'){
+				Press_r();
 			}
-			else if(usart2DataReceived == 'y'){
-				sprintf(bufferMsj, "Axis Y data (r)\n");
-				writeMsg(&Usart2Comm, bufferMsj);
-				uint8_t AccelY_low = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_YOUT_L);
-				uint8_t AccelY_high = i2c_readSingleRegister(&handlerAccelerometer,ACCEL_YOUT_H);
-				int16_t AccelY = AccelY_high << 8 | AccelY_low;
-				sprintf(bufferMsj, "AccelY = %.2f \n", (AccelY/256.f)*9.78);
-				writeMsg(&Usart2Comm, bufferMsj);
-				usart2DataReceived = '\0';
+			else if (usartDataReceived == 'x'){
+				Press_x();
 			}
-			else if(usart2DataReceived == 'z'){
-				sprintf(bufferMsj, "Axis Z data (r)\n");
-				writeMsg(&Usart2Comm, bufferMsj);
-
-				uint8_t AccelZ_low = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_ZOUT_L);
-				uint8_t AccelZ_high = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_ZOUT_H);
-				int16_t AccelZ = AccelZ_high << 8 | AccelZ_low;
-				sprintf(bufferMsj, "AccelZ = %.2f \n", (AccelZ/256.f)*9.78);
-				writeMsg(&Usart2Comm, bufferMsj);
-				usart2DataReceived = '\0';
+			else if(usartDataReceived == 'y'){
+				Press_y();
 			}
-			if (usart2DataReceived == 'd'){
-				banderaMuestreo = 1;
-				numeroMuestreo = 0;
-				while(numeroMuestreo < 2000){
-					uint8_t AccelX_low =  i2c_readSingleRegister(&handlerAccelerometer, ACCEL_XOUT_L);
-					uint8_t AccelX_high = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_XOUT_H);
-					int16_t AccelX = AccelX_high << 8 | AccelX_low;
-
-
-					uint8_t AccelY_low = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_YOUT_L);
-					uint8_t AccelY_high = i2c_readSingleRegister(&handlerAccelerometer,ACCEL_YOUT_H);
-					int16_t AccelY = AccelY_high << 8 | AccelY_low;
-
-
-					uint8_t AccelZ_low = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_ZOUT_L);
-					uint8_t AccelZ_high = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_ZOUT_H);
-					int16_t AccelZ = AccelZ_high << 8 | AccelZ_low;
-
-					ArregloX[numeroMuestreo] = (AccelX/256.f)*9.78;
-					ArregloY[numeroMuestreo] = (AccelY/256.f)*9.78;
-					ArregloZ[numeroMuestreo] = (AccelZ/256.f)*9.78;
-
-				}
-				banderaMuestreo = 0;
-				numeroMuestreo = 0;
-				for (int i = 0; i < 2000; i++) {
-					sprintf(bufferMsj, "X = %.2f  ;  Y = %.2f  ;  Z = %.2f   | %u \n", ArregloX[i], ArregloY[i], ArregloZ[i], i);
-					writeMsg(&Usart2Comm, bufferMsj);
-				}
-
-				usart2DataReceived = '\0';
-
+			else if(usartDataReceived == 'z'){
+				Press_z();
 			}
-//			if (usart2DataReceived == '\0'){
-//				banderaMuestreo = 1;
-//				while(numeroMuestreo < 2000){
-//					uint8_t AccelX_low =  i2c_readSingleRegister(&handlerAccelerometer, ACCEL_XOUT_L);
-//					uint8_t AccelX_high = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_XOUT_H);
-//					int16_t AccelX = AccelX_high << 8 | AccelX_low;
-//					sprintf(bufferMsj, "AccelX = %.2f \n", (AccelX/256.f)*9.78);
-//					writeMsg(&Usart2Comm, bufferMsj);
-//
-//					uint8_t AccelY_low = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_YOUT_L);
-//					uint8_t AccelY_high = i2c_readSingleRegister(&handlerAccelerometer,ACCEL_YOUT_H);
-//					int16_t AccelY = AccelY_high << 8 | AccelY_low;
-//					sprintf(bufferMsj, "AccelY = %.2f \n", (AccelY/256.f)*9.78);
-//					writeMsg(&Usart2Comm, bufferMsj);
-//
-//
-//					uint8_t AccelZ_low = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_ZOUT_L);
-//					uint8_t AccelZ_high = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_ZOUT_H);
-//					int16_t AccelZ = AccelZ_high << 8 | AccelZ_low;
-//					sprintf(bufferMsj, "AccelZ = %.2f \n", (AccelZ/256.f)*9.78);
-//					writeMsg(&Usart2Comm, bufferMsj);
-//					numeroMuestreo = 0; // para que nunca salga del while hasta que se precione otra tecla
-//
-//					DuttyX = 770*((AccelX/256.f)*9.78) + 10000;
-//					updateDuttyCycle(&handerPWMX, DuttyX);
-//					DuttyY = 770*((AccelY/256.f)*9.78) + 10000;
-//					updateDuttyCycle(&handerPWMY, DuttyY);
-//					DuttyZ = 770*((AccelZ/256.f)*9.78) + 10000;
-//					updateDuttyCycle(&handerPWMZ, DuttyZ);
-//
-//
-//					if(usart2DataReceived != '\0'){
-//						numeroMuestreo = 2000;
-//					}
-//				}
-//			}
+			if (usartDataReceived == 'd'){
+				Press_d();
+			}
+			if (usartDataReceived == 'l'){
+				Press_l();
+			}
 		}
 
 	} // Fin while
 	return(0);
 } //Fin funcion main
 
-/**/
+
+/*aca se inicializan todos los elemntos*/
 void init_hardware (void){
 
 /*Configuramos la velocidad del micro*/
@@ -342,15 +222,15 @@ void init_hardware (void){
 	handlerPinRX.GPIO_PinConfig.GPIO_PinAltFunMode       = AF8;
 	GPIO_Config(&handlerPinRX);
 	//cuando el micro este a 80MHz deben usarse los baudrate terminados en _80MHz
-	Usart2Comm.ptrUSARTx                                     = USART6;
-	Usart2Comm.USART_Config.USART_baudrate                   = USART_BAUDRATE_115200_80MHz;
-	Usart2Comm.USART_Config.USART_datasize                   = USART_DATASIZE_8BIT;
-	Usart2Comm.USART_Config.USART_mode                       = USART_MODE_RXTX;
-	Usart2Comm.USART_Config.USART_parity                     = USART_PARITY_NONE;
-	Usart2Comm.USART_Config.USART_stopbits                   = USART_STOPBIT_1;
-	Usart2Comm.USART_Config.USART_enableIntTX                = USART_TX_INTERRUPT_DISABLE;
-	Usart2Comm.USART_Config.USART_enableIntRX                = USART_RX_INTERRUPT_ENABLE;
-	USART_Config(&Usart2Comm);
+	UsartComm.ptrUSARTx                                     = USART6;
+	UsartComm.USART_Config.USART_baudrate                   = USART_BAUDRATE_115200_80MHz;
+	UsartComm.USART_Config.USART_datasize                   = USART_DATASIZE_8BIT;
+	UsartComm.USART_Config.USART_mode                       = USART_MODE_RXTX;
+	UsartComm.USART_Config.USART_parity                     = USART_PARITY_NONE;
+	UsartComm.USART_Config.USART_stopbits                   = USART_STOPBIT_1;
+	UsartComm.USART_Config.USART_enableIntTX                = USART_TX_INTERRUPT_DISABLE;
+	UsartComm.USART_Config.USART_enableIntRX                = USART_RX_INTERRUPT_ENABLE;
+	USART_Config(&UsartComm);
 
 	/*Probando el PLL*/
 	handlerPinPrueba.pGPIOx = GPIOA;
@@ -472,19 +352,183 @@ void Loop_Principal(void){
 
 		infinito = 0; // para que nunca salga del while hasta que se precione otra tecla
 
-		DuttyX = 1000 * ((AccelX / 256.f) * 9.78) + 10000;
+		DuttyX = 830 * ((AccelX / 210.f) * 9.78) + 10000;
 		updateDuttyCycle(&handerPWMX, DuttyX);
-		DuttyY = 1000 * ((AccelY / 256.f) * 9.78) + 10000;
+		DuttyY = 830 * ((AccelY / 210.f) * 9.78) + 10000;
 		updateDuttyCycle(&handerPWMY, DuttyY);
-		DuttyZ = 1000 * ((AccelZ / 256.f) * 9.78) + 10000;
+		DuttyZ = 830 * ((AccelZ / 210.f) * 9.78) + 10000;
 		updateDuttyCycle(&handerPWMZ, DuttyZ);
 
-		if (usart2DataReceived != '\0') {
+		if (usartDataReceived != '\0') {
 			infinito = 2000;
 		}
 	}
+	infinito = 0;
+	banderaMuestreo = 0;
+} //FIN LOOP PRINCIPAL
 
-}
+void Menu(void){
+	sprintf(bufferMsj, "Hola, soy el MCU de Mateo y tengo una frecuencia de %d Hz \n ", getConfigPLL());
+	writeMsg(&UsartComm, bufferMsj);
+	sprintf(bufferMsj, "- Presiona m para mostrar este menu cuando desees. \n ");
+	writeMsg(&UsartComm, bufferMsj);
+	sprintf(bufferMsj, "- Presiona w para imprimir WHO I AM?. \n ");
+	writeMsg(&UsartComm, bufferMsj);
+	sprintf(bufferMsj, "- Presiona r para resetear los valores del acelerometro. \n ");
+	writeMsg(&UsartComm, bufferMsj);
+	sprintf(bufferMsj, "- Presiona p para ver el PWR. \n ");
+	writeMsg(&UsartComm, bufferMsj);
+	sprintf(bufferMsj, "- Presiona x para ver el valor en el eje x. \n ");
+	writeMsg(&UsartComm, bufferMsj);
+	sprintf(bufferMsj, "- Presiona y para ver el valor en el eje y. \n ");
+	writeMsg(&UsartComm, bufferMsj);
+	sprintf(bufferMsj, "- Presiona z para ver el valor en el eje z. \n ");
+	writeMsg(&UsartComm, bufferMsj);
+	sprintf(bufferMsj, "- Presiona d para recoger 6000 datos en ");
+	writeMsg(&UsartComm, bufferMsj);
+	sprintf(bufferMsj, "2s y mostrarlos como una tabla. \n ");
+	writeMsg(&UsartComm, bufferMsj);
+	sprintf(bufferMsj, "- Presiona l para ver un muestreo de datos constante a 1KHz. ");
+	writeMsg(&UsartComm, bufferMsj);
+	sprintf(bufferMsj, "Presiona cualquier tecla para detener el muestreo. \n ");
+	writeMsg(&UsartComm, bufferMsj);
+	usartDataReceived = '\0';
+}//FIN MENU
+
+
+void Press_w(void){
+	sprintf(bufferMsj, "WHO_AM_I? (r)\n");
+	writeMsg(&UsartComm, bufferMsj);
+
+	i2cBuffer = i2c_readSingleRegister(&handlerAccelerometer, WHO_AM_I);
+	sprintf(bufferMsj, "dataRead = 0x%x \n", (unsigned int) i2cBuffer);
+	writeMsg(&UsartComm, bufferMsj);
+	usartDataReceived = '\0';
+
+}//FIN PRESS W
+
+void Press_p(void){
+	sprintf(bufferMsj, "PWR_MGMT_1 state (r)\n");
+	writeMsg(&UsartComm, bufferMsj);
+
+	i2cBuffer = i2c_readSingleRegister(&handlerAccelerometer, POWER_CTL);
+	sprintf(bufferMsj, "dataRead = 0x%x \n", (unsigned int) i2cBuffer);
+	writeMsg(&UsartComm, bufferMsj);
+	usartDataReceived = '\0';
+}//FIN PRESS P
+
+void Press_r(void){
+	sprintf(bufferMsj, "PWR_MGMT_1 reset (w)\n");
+	writeMsg(&UsartComm, bufferMsj);
+
+	i2c_writeSingleRegister(&handlerAccelerometer, POWER_CTL , 0x2D);
+	usartDataReceived = '\0';
+}//FIN PRESS R
+
+void Press_x(void){
+	sprintf(bufferMsj, "Axis X data (r) \n");
+	writeMsg(&UsartComm, bufferMsj);
+
+	uint8_t AccelX_low =  i2c_readSingleRegister(&handlerAccelerometer, ACCEL_XOUT_L);
+	uint8_t AccelX_high = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_XOUT_H);
+	int16_t AccelX = AccelX_high << 8 | AccelX_low;
+	sprintf(bufferMsj, "AccelX = %.2f m/s² \n", (AccelX/210.f)*9.78);
+	writeMsg(&UsartComm, bufferMsj);
+	usartDataReceived = '\0';
+}//FIN PRESS X
+
+void Press_y(void){
+	sprintf(bufferMsj, "Axis Y data (r)\n");
+	writeMsg(&UsartComm, bufferMsj);
+
+	uint8_t AccelY_low = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_YOUT_L);
+	uint8_t AccelY_high = i2c_readSingleRegister(&handlerAccelerometer,ACCEL_YOUT_H);
+	int16_t AccelY = AccelY_high << 8 | AccelY_low;
+	sprintf(bufferMsj, "AccelY = %.2f m/s² \n", (AccelY/210.f)*9.78);
+	writeMsg(&UsartComm, bufferMsj);
+	usartDataReceived = '\0';
+}//FIN PRESS Y
+
+void Press_z(void){
+	sprintf(bufferMsj, "Axis Z data (r)\n");
+	writeMsg(&UsartComm, bufferMsj);
+
+	uint8_t AccelZ_low = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_ZOUT_L);
+	uint8_t AccelZ_high = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_ZOUT_H);
+	int16_t AccelZ = AccelZ_high << 8 | AccelZ_low;
+	sprintf(bufferMsj, "AccelZ = %.2f m/s² \n", (AccelZ/210.f)*9.78);
+	writeMsg(&UsartComm, bufferMsj);
+	usartDataReceived = '\0';
+}//FIN PRESS Z
+
+void Press_d(void){
+	banderaMuestreo = 1;
+	numeroMuestreo = 0;
+	while (numeroMuestreo < 2000) {
+		uint8_t AccelX_low = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_XOUT_L);
+		uint8_t AccelX_high = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_XOUT_H);
+		int16_t AccelX = AccelX_high << 8 | AccelX_low;
+
+		uint8_t AccelY_low = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_YOUT_L);
+		uint8_t AccelY_high = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_YOUT_H);
+		int16_t AccelY = AccelY_high << 8 | AccelY_low;
+
+		uint8_t AccelZ_low = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_ZOUT_L);
+		uint8_t AccelZ_high = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_ZOUT_H);
+		int16_t AccelZ = AccelZ_high << 8 | AccelZ_low;
+
+		ArregloX[numeroMuestreo] = (AccelX / 210.f) * 9.78;
+		ArregloY[numeroMuestreo] = (AccelY / 210.f) * 9.78;
+		ArregloZ[numeroMuestreo] = (AccelZ / 210.f) * 9.78;
+	}
+	banderaMuestreo = 0;
+	numeroMuestreo = 0;
+	for (int i = 0; i < 2000; i++) {
+		sprintf(bufferMsj, "X = %.2f m/s² ;  Y = %.2f m/s² ;  Z = %.2f m/s²  | %u \n", ArregloX[i], ArregloY[i], ArregloZ[i], i);
+		writeMsg(&UsartComm, bufferMsj);
+	}
+	usartDataReceived = '\0';
+}//FIN PRESS D
+
+void Press_l(void){
+	banderaMuestreo = 1;
+	while(numeroMuestreo < 2000){
+		uint8_t AccelX_low =  i2c_readSingleRegister(&handlerAccelerometer, ACCEL_XOUT_L);
+		uint8_t AccelX_high = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_XOUT_H);
+		int16_t AccelX = AccelX_high << 8 | AccelX_low;
+		sprintf(bufferMsj, "AccelX = %.2f m/s² \n", (AccelX/210.f)*9.78);
+		writeMsg(&UsartComm, bufferMsj);
+
+		uint8_t AccelY_low = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_YOUT_L);
+		uint8_t AccelY_high = i2c_readSingleRegister(&handlerAccelerometer,ACCEL_YOUT_H);
+		int16_t AccelY = AccelY_high << 8 | AccelY_low;
+		sprintf(bufferMsj, "AccelY = %.2f m/s² \n", (AccelY/210.f)*9.78);
+		writeMsg(&UsartComm, bufferMsj);
+
+
+		uint8_t AccelZ_low = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_ZOUT_L);
+		uint8_t AccelZ_high = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_ZOUT_H);
+		int16_t AccelZ = AccelZ_high << 8 | AccelZ_low;
+		sprintf(bufferMsj, "AccelZ = %.2f m/s² \n", (AccelZ/210.f)*9.78);
+		writeMsg(&UsartComm, bufferMsj);
+		numeroMuestreo = 0; // para que nunca salga del while hasta que se precione otra tecla
+
+		DuttyX = 830 * ((AccelX/210.f)*9.78) + 10000;
+		updateDuttyCycle(&handerPWMX, DuttyX);
+		DuttyY = 830 * ((AccelY/210.f)*9.78) + 10000;
+		updateDuttyCycle(&handerPWMY, DuttyY);
+		DuttyZ = 830 * ((AccelZ/210.f)*9.78) + 10000;
+		updateDuttyCycle(&handerPWMZ, DuttyZ);
+
+
+		if(usartDataReceived != 'l'){
+			numeroMuestreo = 2000;
+		}
+	}
+	numeroMuestreo = 0;
+}//FIN PRESS L
+
+
 // aca se ejecuta el Blinky
 void BasicTimer2_Callback(void){
 
@@ -504,7 +548,7 @@ void callback_extInt3 (void){
 
 //recibir datos con el usart
 void usart6Rx_Callback(void){
-	usart2DataReceived = getRxData();
+	usartDataReceived = getRxData();
 }
 
 

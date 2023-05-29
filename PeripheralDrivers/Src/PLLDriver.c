@@ -10,6 +10,8 @@
 #include "PLLDriver.h"
 #include "GPIOxDriver.h"
 
+uint32_t Velocidad = 0;
+
 void configPLL(PLL_Handler_t *ptrHandlerPLL){
 
 	RCC->PLLCFGR &= ~RCC_PLLCFGR_PLLSRC;
@@ -108,7 +110,19 @@ void configPLL(PLL_Handler_t *ptrHandlerPLL){
 		RCC->CFGR &= ~RCC_CFGR_SW; // ponemos el SW en HSI (los bits en 0 ambos)
 	}
 } // FIN configPLL
-void getConfigPLL(){
 
+int getConfigPLL(void) {
+    // Se leen y se extraen los valores de configuracion
+    uint32_t PLLM = (RCC->PLLCFGR & RCC_PLLCFGR_PLLM_Msk) >> RCC_PLLCFGR_PLLM_Pos;
+    uint32_t PLLN = (RCC->PLLCFGR & RCC_PLLCFGR_PLLN_Msk) >> RCC_PLLCFGR_PLLN_Pos;
+
+    // Se calcula el valor actual del clock
+    if((RCC->CFGR) |= RCC_CFGR_SW == 0b10  ){
+    	Velocidad = ((16000000 / PLLM) * PLLN) / 2;
+    }
+    else{
+    	Velocidad = 16000000;
+    }
+    return Velocidad;
 }
 
