@@ -19,6 +19,8 @@
 #include "I2CDriver.h"
 #include "arm_math.h"
 #include <math.h>
+#include "PwmDriver.h"
+#include "SysTickDriver.h"
 
 
 
@@ -36,14 +38,25 @@ GPIO_Handler_t handlerPinPrueba          = {0};
 // Handlers y banderas de los timers
 BasicTimer_Handler_t handlerBlinkyTimer  = {0};
 BasicTimer_Handler_t handler1HzTimer     = {0};
-uint8_t banderaMuestreo                  = 0;
-uint16_t numeroMuestreo                   = 0;
-
-
+uint8_t banderaMuestreo                  = 1;
+uint16_t numeroMuestreo                  = 0;
+uint16_t infinito                        = 0;
 
 
 // Extis
 EXTI_Config_t Exti                       = {0};
+
+// PWM
+GPIO_Handler_t handlerPinPWMX               = {0};
+GPIO_Handler_t handlerPinPWMY               = {0};
+GPIO_Handler_t handlerPinPWMZ               = {0};
+PWM_Handler_t handerPWMX      = {0};
+PWM_Handler_t handerPWMY      = {0};
+PWM_Handler_t handerPWMZ      = {0};
+uint16_t DuttyX                = 0;
+uint16_t DuttyY                = 0;
+uint16_t DuttyZ                = 0;
+
 
 
 // Comunicacion USART
@@ -58,9 +71,6 @@ float ArregloX[2000]                     ={0};
 float ArregloY[2000]                     ={0};
 float ArregloZ[2000]                     ={0};
 uint8_t numeroArreglo                    = 0;
-
-
-
 
 
 //Configuracion para el I2C
@@ -86,8 +96,11 @@ uint8_t i2cBuffer    = 0;
 
 
 
+
+
 //Definiendo las Funciones
 void init_hardware (void);
+void Loop_Principal(void);
 
 
 int main(void){
@@ -95,13 +108,39 @@ int main(void){
 	SCB->CPACR |= (0xF <<20);
 /*Inicialización de todos los elementos del sistema*/
 	init_hardware();
-
 	while(1){
-		/*if(usart2DataReceived != '\0'){
-				sprintf(bufferMsj, "%c", usart2DataReceived);
-				writeMsg(&Usart2Comm, bufferMsj);
-				usart2DataReceived = '\0';
-		}*/
+
+		Loop_Principal();
+//		banderaMuestreo = 1;
+//		while (infinito < 2000) {
+//			uint8_t AccelX_low = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_XOUT_L);
+//			uint8_t AccelX_high = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_XOUT_H);
+//			int16_t AccelX = AccelX_high << 8 | AccelX_low;
+//
+//			uint8_t AccelY_low = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_YOUT_L);
+//			uint8_t AccelY_high = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_YOUT_H);
+//			int16_t AccelY = AccelY_high << 8 | AccelY_low;
+//
+//			uint8_t AccelZ_low = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_ZOUT_L);
+//			uint8_t AccelZ_high = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_ZOUT_H);
+//			int16_t AccelZ = AccelZ_high << 8 | AccelZ_low;
+//
+//			infinito = 0; // para que nunca salga del while hasta que se precione otra tecla
+//
+//			DuttyX = 1000 * ((AccelX / 256.f) * 9.78) + 10000;
+//			updateDuttyCycle(&handerPWMX, DuttyX);
+//			DuttyY = 1000 * ((AccelY / 256.f) * 9.78) + 10000;
+//			updateDuttyCycle(&handerPWMY, DuttyY);
+//			DuttyZ = 1000 * ((AccelZ / 256.f) * 9.78) + 10000;
+//			updateDuttyCycle(&handerPWMZ, DuttyZ);
+//
+//			if (usart2DataReceived != '\0') {
+//				infinito = 2000;
+//			}
+//		}
+//		banderaMuestreo = 0;
+//		infinito = 0;
+
 		if(usart2DataReceived != '\0'){
 			if(usart2DataReceived == 'w'){
 
@@ -194,33 +233,42 @@ int main(void){
 				usart2DataReceived = '\0';
 
 			}
-			if (usart2DataReceived == 'l'){
-				banderaMuestreo = 1;
-				while(numeroMuestreo < 2000){
-					uint8_t AccelX_low =  i2c_readSingleRegister(&handlerAccelerometer, ACCEL_XOUT_L);
-					uint8_t AccelX_high = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_XOUT_H);
-					int16_t AccelX = AccelX_high << 8 | AccelX_low;
-					sprintf(bufferMsj, "AccelX = %.2f \n", (AccelX/256.f)*9.78);
-					writeMsg(&Usart2Comm, bufferMsj);
-
-					uint8_t AccelY_low = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_YOUT_L);
-					uint8_t AccelY_high = i2c_readSingleRegister(&handlerAccelerometer,ACCEL_YOUT_H);
-					int16_t AccelY = AccelY_high << 8 | AccelY_low;
-					sprintf(bufferMsj, "AccelY = %.2f \n", (AccelY/256.f)*9.78);
-					writeMsg(&Usart2Comm, bufferMsj);
-
-
-					uint8_t AccelZ_low = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_ZOUT_L);
-					uint8_t AccelZ_high = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_ZOUT_H);
-					int16_t AccelZ = AccelZ_high << 8 | AccelZ_low;
-					sprintf(bufferMsj, "AccelZ = %.2f \n", (AccelZ/256.f)*9.78);
-					writeMsg(&Usart2Comm, bufferMsj);
-					numeroMuestreo = 0; // para que nunca salga del while hasta que se precione otra tecla
-					if(usart2DataReceived != 'l'){
-						numeroMuestreo = 2000;
-					}
-				}
-			}
+//			if (usart2DataReceived == '\0'){
+//				banderaMuestreo = 1;
+//				while(numeroMuestreo < 2000){
+//					uint8_t AccelX_low =  i2c_readSingleRegister(&handlerAccelerometer, ACCEL_XOUT_L);
+//					uint8_t AccelX_high = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_XOUT_H);
+//					int16_t AccelX = AccelX_high << 8 | AccelX_low;
+//					sprintf(bufferMsj, "AccelX = %.2f \n", (AccelX/256.f)*9.78);
+//					writeMsg(&Usart2Comm, bufferMsj);
+//
+//					uint8_t AccelY_low = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_YOUT_L);
+//					uint8_t AccelY_high = i2c_readSingleRegister(&handlerAccelerometer,ACCEL_YOUT_H);
+//					int16_t AccelY = AccelY_high << 8 | AccelY_low;
+//					sprintf(bufferMsj, "AccelY = %.2f \n", (AccelY/256.f)*9.78);
+//					writeMsg(&Usart2Comm, bufferMsj);
+//
+//
+//					uint8_t AccelZ_low = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_ZOUT_L);
+//					uint8_t AccelZ_high = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_ZOUT_H);
+//					int16_t AccelZ = AccelZ_high << 8 | AccelZ_low;
+//					sprintf(bufferMsj, "AccelZ = %.2f \n", (AccelZ/256.f)*9.78);
+//					writeMsg(&Usart2Comm, bufferMsj);
+//					numeroMuestreo = 0; // para que nunca salga del while hasta que se precione otra tecla
+//
+//					DuttyX = 770*((AccelX/256.f)*9.78) + 10000;
+//					updateDuttyCycle(&handerPWMX, DuttyX);
+//					DuttyY = 770*((AccelY/256.f)*9.78) + 10000;
+//					updateDuttyCycle(&handerPWMY, DuttyY);
+//					DuttyZ = 770*((AccelZ/256.f)*9.78) + 10000;
+//					updateDuttyCycle(&handerPWMZ, DuttyZ);
+//
+//
+//					if(usart2DataReceived != '\0'){
+//						numeroMuestreo = 2000;
+//					}
+//				}
+//			}
 		}
 
 	} // Fin while
@@ -266,7 +314,7 @@ void init_hardware (void){
 	BasicTimer_Config(&handlerBlinkyTimer);
 
 	//Si el timer esta a 80MHz deben usarse la Speed que termina en _PLL80_100us
-	handler1HzTimer.ptrTIMx                              = TIM3;
+	handler1HzTimer.ptrTIMx                              = TIM4;
 	handler1HzTimer.TIMx_Config.TIMx_mode                = BTIMER_MODE_UP ;
 	handler1HzTimer.TIMx_Config.TIMx_speed               = BTIMER_SPEED_PLL80_100us;
 	handler1HzTimer.TIMx_Config.TIMx_period              = 10;
@@ -342,24 +390,113 @@ void init_hardware (void){
 	i2c_config(&handlerAccelerometer);
 
 	//CAmbiando el muestreo del acelerometro
-	i2c_writeSingleRegister(&handlerAccelerometer, BW_RATE, 0xE);
+//	i2c_writeSingleRegister(&handlerAccelerometer, BW_RATE, 0xE);
+
+/*-------------------------------------------------Configuracion de PWM----------------------------------------------------------*/
+
+	/*Configuracion PIN para el PWMX (debe ser un pin como Funcion)*/
+	handlerPinPWMX.pGPIOx = GPIOB;
+	handlerPinPWMX.GPIO_PinConfig.GPIO_PinNumber = PIN_4;
+	handlerPinPWMX.GPIO_PinConfig.GPIO_PinMode = GPIO_MODE_ALTFN;
+	handlerPinPWMX.GPIO_PinConfig.GPIO_PinOPType = GPIO_OTYPE_PUSHPULL;
+	handlerPinPWMX.GPIO_PinConfig.GPIO_PinSpeed = GPIO_OSPEED_FAST;
+	handlerPinPWMX.GPIO_PinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
+	handlerPinPWMX.GPIO_PinConfig.GPIO_PinAltFunMode = AF2;
+	GPIO_Config(&handlerPinPWMX);
+	//Configuracion PWMX
+	handerPWMX.ptrTIMx = TIM3;
+	handerPWMX.config.channel = PWM_CHANNEL_1;
+	handerPWMX.config.duttyCicle = DuttyX;
+	handerPWMX.config.periodo = 20000;
+	handerPWMX.config.prescaler = 80;
+	pwm_Config(&handerPWMX);
+	enableOutput(&handerPWMX);
+	startPwmSignal(&handerPWMX);
+
+	/*Configuracion PIN para el PWMY (debe ser un pin como Funcion)*/
+	handlerPinPWMY.pGPIOx = GPIOB;
+	handlerPinPWMY.GPIO_PinConfig.GPIO_PinNumber = PIN_5;
+	handlerPinPWMY.GPIO_PinConfig.GPIO_PinMode = GPIO_MODE_ALTFN;
+	handlerPinPWMY.GPIO_PinConfig.GPIO_PinOPType = GPIO_OTYPE_PUSHPULL;
+	handlerPinPWMY.GPIO_PinConfig.GPIO_PinSpeed = GPIO_OSPEED_FAST;
+	handlerPinPWMY.GPIO_PinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
+	handlerPinPWMY.GPIO_PinConfig.GPIO_PinAltFunMode = AF2;
+	GPIO_Config(&handlerPinPWMY);
+	//Configuracion PWMY
+	handerPWMY.ptrTIMx = TIM3;
+	handerPWMY.config.channel = PWM_CHANNEL_2;
+	handerPWMY.config.duttyCicle = DuttyY;
+	handerPWMY.config.periodo = 20000;
+	handerPWMY.config.prescaler = 80;
+	pwm_Config(&handerPWMY);
+	enableOutput(&handerPWMY);
+	startPwmSignal(&handerPWMY);
+
+	/*Configuracion PIN para el PWMZ (debe ser un pin como Funcion)*/
+	handlerPinPWMZ.pGPIOx = GPIOB;
+	handlerPinPWMZ.GPIO_PinConfig.GPIO_PinNumber = PIN_0;
+	handlerPinPWMZ.GPIO_PinConfig.GPIO_PinMode = GPIO_MODE_ALTFN;
+	handlerPinPWMZ.GPIO_PinConfig.GPIO_PinOPType = GPIO_OTYPE_PUSHPULL;
+	handlerPinPWMZ.GPIO_PinConfig.GPIO_PinSpeed = GPIO_OSPEED_FAST;
+	handlerPinPWMZ.GPIO_PinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
+	handlerPinPWMZ.GPIO_PinConfig.GPIO_PinAltFunMode = AF2;
+	GPIO_Config(&handlerPinPWMZ);
+	//Configuracion PWMZ
+	handerPWMZ.ptrTIMx = TIM3;
+	handerPWMZ.config.channel = PWM_CHANNEL_3;
+	handerPWMZ.config.duttyCicle = DuttyZ;
+	handerPWMZ.config.periodo = 20000;
+	handerPWMZ.config.prescaler = 80;
+
+	pwm_Config(&handerPWMZ);
+	// Activando señal
+	enableOutput(&handerPWMZ);
+	startPwmSignal(&handerPWMZ);
+
 } // Termina el int_Hardware
 
+void Loop_Principal(void){
+	banderaMuestreo = 1;
+	while (infinito < 2000) {
+		uint8_t AccelX_low = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_XOUT_L);
+		uint8_t AccelX_high = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_XOUT_H);
+		int16_t AccelX = AccelX_high << 8 | AccelX_low;
 
+		uint8_t AccelY_low = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_YOUT_L);
+		uint8_t AccelY_high = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_YOUT_H);
+		int16_t AccelY = AccelY_high << 8 | AccelY_low;
 
+		uint8_t AccelZ_low = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_ZOUT_L);
+		uint8_t AccelZ_high = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_ZOUT_H);
+		int16_t AccelZ = AccelZ_high << 8 | AccelZ_low;
+
+		infinito = 0; // para que nunca salga del while hasta que se precione otra tecla
+
+		DuttyX = 1000 * ((AccelX / 256.f) * 9.78) + 10000;
+		updateDuttyCycle(&handerPWMX, DuttyX);
+		DuttyY = 1000 * ((AccelY / 256.f) * 9.78) + 10000;
+		updateDuttyCycle(&handerPWMY, DuttyY);
+		DuttyZ = 1000 * ((AccelZ / 256.f) * 9.78) + 10000;
+		updateDuttyCycle(&handerPWMZ, DuttyZ);
+
+		if (usart2DataReceived != '\0') {
+			infinito = 2000;
+		}
+	}
+
+}
 // aca se ejecuta el Blinky
 void BasicTimer2_Callback(void){
 
 	GPIOxTooglePin(&handlerLEDBlinky);
 }
 // aca se ejecuta el Blinky
-void BasicTimer3_Callback(void){
+void BasicTimer4_Callback(void){
 	if(banderaMuestreo == 1){
 		numeroMuestreo++;
+		infinito++;
 	}
-
 }
-
 
 void callback_extInt3 (void){
  // aca se debe levantar una bandera
