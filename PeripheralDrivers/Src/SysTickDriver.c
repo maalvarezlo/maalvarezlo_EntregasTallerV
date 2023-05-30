@@ -14,7 +14,7 @@ uint64_t ticks_start = 0;
 uint64_t ticks_counting = 0;
 
 /**/
-void config_SysTick_ms(uint8_t systemClock){
+void config_SysTick_ms(uint32_t systemClock){
     // Reiniciamos el valor de la variable que cuenta tiempo
     ticks = 0;
 
@@ -34,7 +34,7 @@ void config_SysTick_ms(uint8_t systemClock){
     	break;
     //en caso de un valor diferente
     default:
-    	SysTick->LOAD = SYSTICK_LOAD_VALUE_80MHz_1ms;
+    	SysTick->LOAD = SYSTICK_LOAD_VALUE_16MHz_1ms;
     	break;
 
     }

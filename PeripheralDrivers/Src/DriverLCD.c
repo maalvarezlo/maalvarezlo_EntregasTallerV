@@ -10,15 +10,16 @@
 
 void EscribirLCD(I2C_Handler_t *ptrHandlerI2C, uint8_t dataToWrite){
 
-	/* 1. Generamos la condición de Start*/
+	// Iniciamos la transaccion
 	i2c_startTransaction(ptrHandlerI2C);
 
-	/* 2. Enviamos la diracción del esclavo y la indicación de ESCRIBIR */
+	// Enviamos la dirección del esclavo
 	i2c_sendSlaveAddressRW(ptrHandlerI2C, ptrHandlerI2C->slaveAddress, I2C_WRITE_DATA);
 
-	/* 3. Enviamos la dirección de memoria que deseamos escribir*/
+	// dirección de memoria donde escribiremos
 	i2c_sendDataByte(ptrHandlerI2C, dataToWrite);
 
+	//detenemos la transaccion
 	i2c_stopTransaction(ptrHandlerI2C);
 }
 
@@ -59,43 +60,43 @@ void sendDataLCD(I2C_Handler_t *ptrHandlerI2C, char data){
 
 void LimpiarLCD(I2C_Handler_t *ptrHandlerI2C){
 	CMD_toLCD(ptrHandlerI2C, 0x01);
-	delay_50();
+	delay_ms(50);
 }
 
 void InicioLCD(I2C_Handler_t *ptrHandlerI2C){
 
 	// Delay para iniciar
-	delay_50();
+	delay_ms(50);
 
 	CMD_toLCD(ptrHandlerI2C, 0x30);
-	delay_5();
+	delay_ms(5);
 
 	CMD_toLCD(ptrHandlerI2C, 0x30);
-	delay_1();
+	delay_ms(1);
 
 	CMD_toLCD(ptrHandlerI2C, 0x30);
 
 	// Delay después inicializar
-	delay_50();
+	delay_ms(50);
 
 
 	  // Configuracion para escribir
 
 	// Data lenght 4, lines 2, character font 5X8
 	CMD_toLCD(ptrHandlerI2C, 0x20);
-	delay_50();
+	delay_ms(50);
 	CMD_toLCD(ptrHandlerI2C, 0x28);
-	delay_50();
+	delay_ms(50);
 	// Display apagado
 	CMD_toLCD(ptrHandlerI2C, 0x08);
-	delay_50();
+	delay_ms(50);
 	// Limpiando el Display
 	CMD_toLCD(ptrHandlerI2C, 0x01);
-	delay_50();
+	delay_ms(50);
 	// modo de entrada
 	CMD_toLCD(ptrHandlerI2C, 0x06);
 
-	delay_50();
+	delay_ms(50);
 	// Delay para encendido
 	CMD_toLCD(ptrHandlerI2C, 0x0C);
 }
@@ -206,33 +207,6 @@ void moverCursorLCD(I2C_Handler_t *ptrHandlerI2C, uint8_t x, uint8_t y){
 	CMD_toLCD(ptrHandlerI2C, 0x80|cursor);
 }
 
-void delay_50 (void){
-	for (int i=0;i<62500;i++){
-		__NOP();
-	}
-
-}
-
-void delay_5 (void){
-	for (int i=0; i<6250; i++){
-		__NOP();
-	}
-
-}
-
-void delay_1 (void){
-	for (int i=0;i<1250;i++){
-		__NOP();
-	}
-
-}
-
-void delay_10 (void){
-	for (int i=0;i<12500;i++){
-		__NOP();
-	}
-
-}
 
 void ResetScreenLCD(I2C_Handler_t *ptrHandlerI2C){
 	char DataClean[64] = "                    ";

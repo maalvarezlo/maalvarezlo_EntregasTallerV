@@ -39,7 +39,7 @@ GPIO_Handler_t handlerPinPrueba          = {0};
 // Handlers y banderas de los timers
 BasicTimer_Handler_t handlerBlinkyTimer  = {0};
 BasicTimer_Handler_t handler1HzTimer     = {0};
-BasicTimer_Handler_t handler1sTimer     = {0};
+BasicTimer_Handler_t handler1sTimer      = {0};
 uint8_t banderaMuestreo                  = 1;
 uint16_t numeroMuestreo                  = 0;
 uint16_t infinito                        = 0;
@@ -53,24 +53,24 @@ EXTI_Config_t Exti                       = {0};
 GPIO_Handler_t handlerPinPWMX               = {0};
 GPIO_Handler_t handlerPinPWMY               = {0};
 GPIO_Handler_t handlerPinPWMZ               = {0};
-PWM_Handler_t handerPWMX      = {0};
-PWM_Handler_t handerPWMY      = {0};
-PWM_Handler_t handerPWMZ      = {0};
-uint16_t DuttyX                = 0;
-uint16_t DuttyY                = 0;
-uint16_t DuttyZ                = 0;
+PWM_Handler_t handerPWMX                    = {0};
+PWM_Handler_t handerPWMY                    = {0};
+PWM_Handler_t handerPWMZ                    = {0};
+uint16_t DuttyX                             = 0;
+uint16_t DuttyY                             = 0;
+uint16_t DuttyZ                             = 0;
 
 // Comunicacion USART
-USART_Handler_t UsartComm               = {0};
+USART_Handler_t UsartComm                = {0};
 GPIO_Handler_t handlerPinTX              = {0};
 GPIO_Handler_t handlerPinRX              = {0};
 uint16_t printMSJ                        = 0;
-uint8_t usartDataReceived               = 0;
+uint8_t usartDataReceived                = 0;
 char bufferMsj[64]                       = {0};
 char bufferMsj2[64]                      = {0};
-float ArregloX[2000]                     ={0};
-float ArregloY[2000]                     ={0};
-float ArregloZ[2000]                     ={0};
+float ArregloX[2000]                     = {0};
+float ArregloY[2000]                     = {0};
+float ArregloZ[2000]                     = {0};
 uint8_t numeroArreglo                    = 0;
 
 
@@ -82,11 +82,9 @@ GPIO_Handler_t handlerI2cSDA2           = {0};
 GPIO_Handler_t handlerI2cSCL2           = {0};
 I2C_Handler_t handlerLCD                = {0};
 uint8_t i2cBuffer                       = 0;
-
-char bufferx[64] = {0};
-char buffery[64] = {0};
-char bufferz[64] = {0};
-char buffersum[64] = {0};
+char bufferx[64]                        = {0};
+char buffery[64]                        = {0};
+char bufferz[64]                        = {0};
 
 
 //acelerometro
@@ -102,11 +100,12 @@ char buffersum[64] = {0};
 #define WHO_AM_I                 0
 
 //LCD
-#define LCD_ADDRESS		0x21
+#define LCD_ADDRESS	        	0x21
 
 
 //Definiendo las Funciones
 void init_hardware (void);
+void LCDfijo(void);
 void Loop_Principal(void);
 void Menu(void);
 void Press_w(void);
@@ -126,22 +125,7 @@ int main(void){
 /*Inicialización de todos los elementos del sistema*/
 	init_hardware();
 	Menu();
-
-	// LCD
-	ResetScreenLCD(&handlerLCD);
-
-	InicioLCD(&handlerLCD);
-	delay_10();
-	LimpiarLCD(&handlerLCD);
-	delay_10();
-	moverCursorLCD(&handlerLCD, 0, 1);
-	sendMSJCD(&handlerLCD, "Ax =");
-	moverCursorLCD(&handlerLCD, 1, 1);
-	sendMSJCD(&handlerLCD, "Ay = ");
-	moverCursorLCD(&handlerLCD, 2, 1);
-	sendMSJCD(&handlerLCD, "Az = ");
-	moverCursorLCD(&handlerLCD, 3, 1);
-	sendMSJCD(&handlerLCD, "Suma = ");
+	LCDfijo();
 
 	while(1){
 
@@ -150,6 +134,7 @@ int main(void){
 		//acelerometro se pueden ver comovarian de intensidad 3 leds colocados en la protoboard
 		Loop_Principal();
 
+		// cuando el usuario presione una de las siguientes teclas se activara su funcion respectiva
 		if(usartDataReceived != '\0'){
 			if(usartDataReceived == 'm'){
 				Menu();
@@ -191,6 +176,7 @@ void init_hardware (void){
 /*Configuramos la velocidad del micro*/
 	handlerPLL80MHz.FrecuenciaClock  = PLL_CLOCK_80MHz;
 	configPLL(&handlerPLL80MHz);
+	config_SysTick_ms(SYSTICK_LOAD_VALUE_80MHz_1ms);
 
 
 /*Configuracion del LED del blinky en el puesto PA5 */
@@ -233,11 +219,11 @@ void init_hardware (void){
 
 	/* Configuracion del TIM5 */
 		//Si el timer esta a 80MHz deben usarse la Speed que termina en _PLL80_100us
-	handler1sTimer.ptrTIMx = TIM5;
-	handler1sTimer.TIMx_Config.TIMx_mode = BTIMER_MODE_UP;
-	handler1sTimer.TIMx_Config.TIMx_speed = BTIMER_SPEED_PLL80_100us;
-	handler1sTimer.TIMx_Config.TIMx_period = 10000;
-	handler1sTimer.TIMx_Config.TIMx_interruptEnable = BTIMER_INTERRUPT_ENABLE;
+	handler1sTimer.ptrTIMx                                    = TIM5;
+	handler1sTimer.TIMx_Config.TIMx_mode                      = BTIMER_MODE_UP;
+	handler1sTimer.TIMx_Config.TIMx_speed                     = BTIMER_SPEED_PLL80_100us;
+	handler1sTimer.TIMx_Config.TIMx_period                    = 10000;
+	handler1sTimer.TIMx_Config.TIMx_interruptEnable           = BTIMER_INTERRUPT_ENABLE;
 	BasicTimer_Config(&handler1sTimer);
 
 
@@ -273,12 +259,12 @@ void init_hardware (void){
 
 	/*Probando el PLL*/
 	handlerPinPrueba.pGPIOx = GPIOA;
-	handlerPinPrueba.GPIO_PinConfig.GPIO_PinNumber = PIN_8;
-	handlerPinPrueba.GPIO_PinConfig.GPIO_PinMode = GPIO_MODE_ALTFN;
-	handlerPinPrueba.GPIO_PinConfig.GPIO_PinOPType = GPIO_OTYPE_PUSHPULL;
-	handlerPinPrueba.GPIO_PinConfig.GPIO_PinSpeed = GPIO_OSPEED_FAST;
-	handlerPinPrueba.GPIO_PinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
-	handlerPinPrueba.GPIO_PinConfig.GPIO_PinAltFunMode = AF0;
+	handlerPinPrueba.GPIO_PinConfig.GPIO_PinNumber          = PIN_8;
+	handlerPinPrueba.GPIO_PinConfig.GPIO_PinMode            = GPIO_MODE_ALTFN;
+	handlerPinPrueba.GPIO_PinConfig.GPIO_PinOPType          = GPIO_OTYPE_PUSHPULL;
+	handlerPinPrueba.GPIO_PinConfig.GPIO_PinSpeed           = GPIO_OSPEED_FAST;
+	handlerPinPrueba.GPIO_PinConfig.GPIO_PinPuPdControl     = GPIO_PUPDR_NOTHING;
+	handlerPinPrueba.GPIO_PinConfig.GPIO_PinAltFunMode      = AF0;
 
 	//Cargamos la configuracion del Pin en el registro
 	GPIO_Config(&handlerPinPrueba);
@@ -314,18 +300,18 @@ void init_hardware (void){
 	//LCD
 	// Configurando los pines sobre los que funciona el I2C1
 	handlerI2cSCL2.pGPIOx								= GPIOB;
-	handlerI2cSCL2.GPIO_PinConfig.GPIO_PinNumber			= PIN_10;
+	handlerI2cSCL2.GPIO_PinConfig.GPIO_PinNumber		= PIN_10;
 	handlerI2cSCL2.GPIO_PinConfig.GPIO_PinMode			= GPIO_MODE_ALTFN;
-	handlerI2cSCL2.GPIO_PinConfig.GPIO_PinOPType			= GPIO_OTYPE_OPENDRAIN;
+	handlerI2cSCL2.GPIO_PinConfig.GPIO_PinOPType	    = GPIO_OTYPE_OPENDRAIN;
 	handlerI2cSCL2.GPIO_PinConfig.GPIO_PinSpeed			= GPIO_OSPEED_FAST;
 	handlerI2cSCL2.GPIO_PinConfig.GPIO_PinPuPdControl	= GPIO_PUPDR_PULLUP;
 	handlerI2cSCL2.GPIO_PinConfig.GPIO_PinAltFunMode 	= AF4;
 	GPIO_Config(&handlerI2cSCL2);
 
 	handlerI2cSDA2.pGPIOx								= GPIOB;
-	handlerI2cSDA2.GPIO_PinConfig.GPIO_PinNumber			= PIN_3;
+	handlerI2cSDA2.GPIO_PinConfig.GPIO_PinNumber		= PIN_3;
 	handlerI2cSDA2.GPIO_PinConfig.GPIO_PinMode			= GPIO_MODE_ALTFN;
-	handlerI2cSDA2.GPIO_PinConfig.GPIO_PinOPType			= GPIO_OTYPE_OPENDRAIN;
+	handlerI2cSDA2.GPIO_PinConfig.GPIO_PinOPType		= GPIO_OTYPE_OPENDRAIN;
 	handlerI2cSDA2.GPIO_PinConfig.GPIO_PinSpeed			= GPIO_OSPEED_FAST;
 	handlerI2cSDA2.GPIO_PinConfig.GPIO_PinPuPdControl	= GPIO_PUPDR_PULLUP;
 	handlerI2cSDA2.GPIO_PinConfig.GPIO_PinAltFunMode 	= AF9;
@@ -342,57 +328,57 @@ void init_hardware (void){
 
 	/*Configuracion PIN para el PWMX (debe ser un pin como Funcion)*/
 	handlerPinPWMX.pGPIOx = GPIOB;
-	handlerPinPWMX.GPIO_PinConfig.GPIO_PinNumber = PIN_4;
-	handlerPinPWMX.GPIO_PinConfig.GPIO_PinMode = GPIO_MODE_ALTFN;
-	handlerPinPWMX.GPIO_PinConfig.GPIO_PinOPType = GPIO_OTYPE_PUSHPULL;
-	handlerPinPWMX.GPIO_PinConfig.GPIO_PinSpeed = GPIO_OSPEED_FAST;
-	handlerPinPWMX.GPIO_PinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
-	handlerPinPWMX.GPIO_PinConfig.GPIO_PinAltFunMode = AF2;
+	handlerPinPWMX.GPIO_PinConfig.GPIO_PinNumber           = PIN_4;
+	handlerPinPWMX.GPIO_PinConfig.GPIO_PinMode             = GPIO_MODE_ALTFN;
+	handlerPinPWMX.GPIO_PinConfig.GPIO_PinOPType           = GPIO_OTYPE_PUSHPULL;
+	handlerPinPWMX.GPIO_PinConfig.GPIO_PinSpeed            = GPIO_OSPEED_FAST;
+	handlerPinPWMX.GPIO_PinConfig.GPIO_PinPuPdControl      = GPIO_PUPDR_NOTHING;
+	handlerPinPWMX.GPIO_PinConfig.GPIO_PinAltFunMode       = AF2;
 	GPIO_Config(&handlerPinPWMX);
 	//Configuracion PWMX
-	handerPWMX.ptrTIMx = TIM3;
-	handerPWMX.config.channel = PWM_CHANNEL_1;
-	handerPWMX.config.duttyCicle = DuttyX;
-	handerPWMX.config.periodo = 20000;
-	handerPWMX.config.prescaler = 80;
+	handerPWMX.ptrTIMx                                     = TIM3;
+	handerPWMX.config.channel                              = PWM_CHANNEL_1;
+	handerPWMX.config.duttyCicle                           = DuttyX;
+	handerPWMX.config.periodo                              = 20000;
+	handerPWMX.config.prescaler                            = 80;
 	pwm_Config(&handerPWMX);
 	enableOutput(&handerPWMX);
 	startPwmSignal(&handerPWMX);
 
 	/*Configuracion PIN para el PWMY (debe ser un pin como Funcion)*/
-	handlerPinPWMY.pGPIOx = GPIOB;
-	handlerPinPWMY.GPIO_PinConfig.GPIO_PinNumber = PIN_5;
-	handlerPinPWMY.GPIO_PinConfig.GPIO_PinMode = GPIO_MODE_ALTFN;
-	handlerPinPWMY.GPIO_PinConfig.GPIO_PinOPType = GPIO_OTYPE_PUSHPULL;
-	handlerPinPWMY.GPIO_PinConfig.GPIO_PinSpeed = GPIO_OSPEED_FAST;
-	handlerPinPWMY.GPIO_PinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
-	handlerPinPWMY.GPIO_PinConfig.GPIO_PinAltFunMode = AF2;
+	handlerPinPWMY.pGPIOx                                 = GPIOB;
+	handlerPinPWMY.GPIO_PinConfig.GPIO_PinNumber          = PIN_5;
+	handlerPinPWMY.GPIO_PinConfig.GPIO_PinMode            = GPIO_MODE_ALTFN;
+	handlerPinPWMY.GPIO_PinConfig.GPIO_PinOPType          = GPIO_OTYPE_PUSHPULL;
+	handlerPinPWMY.GPIO_PinConfig.GPIO_PinSpeed           = GPIO_OSPEED_FAST;
+	handlerPinPWMY.GPIO_PinConfig.GPIO_PinPuPdControl     = GPIO_PUPDR_NOTHING;
+	handlerPinPWMY.GPIO_PinConfig.GPIO_PinAltFunMode      = AF2;
 	GPIO_Config(&handlerPinPWMY);
 	//Configuracion PWMY
-	handerPWMY.ptrTIMx = TIM3;
-	handerPWMY.config.channel = PWM_CHANNEL_2;
-	handerPWMY.config.duttyCicle = DuttyY;
-	handerPWMY.config.periodo = 20000;
-	handerPWMY.config.prescaler = 80;
+	handerPWMY.ptrTIMx                                    = TIM3;
+	handerPWMY.config.channel                             = PWM_CHANNEL_2;
+	handerPWMY.config.duttyCicle                          = DuttyY;
+	handerPWMY.config.periodo                             = 20000;
+	handerPWMY.config.prescaler                           = 80;
 	pwm_Config(&handerPWMY);
 	enableOutput(&handerPWMY);
 	startPwmSignal(&handerPWMY);
 
 	/*Configuracion PIN para el PWMZ (debe ser un pin como Funcion)*/
-	handlerPinPWMZ.pGPIOx = GPIOB;
-	handlerPinPWMZ.GPIO_PinConfig.GPIO_PinNumber = PIN_0;
-	handlerPinPWMZ.GPIO_PinConfig.GPIO_PinMode = GPIO_MODE_ALTFN;
-	handlerPinPWMZ.GPIO_PinConfig.GPIO_PinOPType = GPIO_OTYPE_PUSHPULL;
-	handlerPinPWMZ.GPIO_PinConfig.GPIO_PinSpeed = GPIO_OSPEED_FAST;
-	handlerPinPWMZ.GPIO_PinConfig.GPIO_PinPuPdControl = GPIO_PUPDR_NOTHING;
-	handlerPinPWMZ.GPIO_PinConfig.GPIO_PinAltFunMode = AF2;
+	handlerPinPWMZ.pGPIOx                                 = GPIOB;
+	handlerPinPWMZ.GPIO_PinConfig.GPIO_PinNumber          = PIN_0;
+	handlerPinPWMZ.GPIO_PinConfig.GPIO_PinMode            = GPIO_MODE_ALTFN;
+	handlerPinPWMZ.GPIO_PinConfig.GPIO_PinOPType          = GPIO_OTYPE_PUSHPULL;
+	handlerPinPWMZ.GPIO_PinConfig.GPIO_PinSpeed           = GPIO_OSPEED_FAST;
+	handlerPinPWMZ.GPIO_PinConfig.GPIO_PinPuPdControl     = GPIO_PUPDR_NOTHING;
+	handlerPinPWMZ.GPIO_PinConfig.GPIO_PinAltFunMode      = AF2;
 	GPIO_Config(&handlerPinPWMZ);
 	//Configuracion PWMZ
-	handerPWMZ.ptrTIMx = TIM3;
-	handerPWMZ.config.channel = PWM_CHANNEL_3;
-	handerPWMZ.config.duttyCicle = DuttyZ;
-	handerPWMZ.config.periodo = 20000;
-	handerPWMZ.config.prescaler = 80;
+	handerPWMZ.ptrTIMx                                    = TIM3;
+	handerPWMZ.config.channel                             = PWM_CHANNEL_3;
+	handerPWMZ.config.duttyCicle                          = DuttyZ;
+	handerPWMZ.config.periodo                             = 20000;
+	handerPWMZ.config.prescaler                           = 80;
 
 	pwm_Config(&handerPWMZ);
 	// Activando señal
@@ -401,6 +387,33 @@ void init_hardware (void){
 
 } // Termina el int_Hardware
 
+// aca se inicializa la LCD y se agregan los caracteres fijos
+void LCDfijo(void){
+
+	ResetScreenLCD(&handlerLCD);
+	InicioLCD(&handlerLCD);
+	delay_ms(10);
+	LimpiarLCD(&handlerLCD);
+	delay_ms(10);
+	moverCursorLCD(&handlerLCD, 0, 1);
+	sendMSJCD(&handlerLCD, "Tarea Especial");
+	moverCursorLCD(&handlerLCD, 2, 1);
+	sendMSJCD(&handlerLCD, "Mateo Alvarez L.");
+	delay_ms(10000);
+	LimpiarLCD(&handlerLCD);
+	moverCursorLCD(&handlerLCD, 0, 1);
+	sendMSJCD(&handlerLCD, "Ax =");
+	moverCursorLCD(&handlerLCD, 1, 1);
+	sendMSJCD(&handlerLCD, "Ay = ");
+	moverCursorLCD(&handlerLCD, 2, 1);
+	sendMSJCD(&handlerLCD, "Az = ");
+	moverCursorLCD(&handlerLCD, 3, 1);
+	sendMSJCD(&handlerLCD, "Sensi = 0.153 m/s2");
+
+}
+
+//En esta funcion se realizauna toma de datos constante para controlar el PWM siempre y la LCD siempre, independientemente si
+// se presiona una tecla o no
 void Loop_Principal(void){
 	banderaMuestreo = 1;
 	while (infinito < 2000) {
@@ -416,12 +429,13 @@ void Loop_Principal(void){
 		uint8_t AccelZ_high = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_ZOUT_H);
 		int16_t AccelZ = AccelZ_high << 8 | AccelZ_low;
 
-		infinito = 0; // para que nunca salga del while hasta que se precione otra tecla
+		infinito = 0; // para que nunca salga del while hasta que se presione otra tecla
 
+		//si se levanta la bandera del timmer 5 (cada 1s) la lcd muetsra los nuevos valores
 		if(banderaLCD == 1){
-			sprintf(bufferx,"%.2f",(AccelX / 210.f) * 9.78);
-			sprintf(buffery,"%.2f",(AccelY / 210.f) * 9.78);
-			sprintf(bufferz,"%.2f",(AccelZ / 210.f) * 9.78);
+			sprintf(bufferx,"%.2f m/s2  ",(AccelX / 210.f) * 9.78);
+			sprintf(buffery,"%.2f m/s2  ",(AccelY / 210.f) * 9.78);
+			sprintf(bufferz,"%.2f m/s2  ",(AccelZ / 210.f) * 9.78);
 
 			moverCursorLCD(&handlerLCD, 0, 8);
 			sendMSJCD(&handlerLCD, bufferx);
@@ -433,6 +447,7 @@ void Loop_Principal(void){
 			banderaLCD =0;
 		}
 
+		// linealizamos el dutty para que cada vez que varien los valores que detecta el acelerometro tambien varie el dutty
 		DuttyX = 830 * ((AccelX / 210.f) * 9.78) + 10000;
 		updateDuttyCycle(&handerPWMX, DuttyX);
 		DuttyY = 830 * ((AccelY / 210.f) * 9.78) + 10000;
@@ -542,6 +557,9 @@ void Press_z(void){
 	usartDataReceived = '\0';
 }//FIN PRESS Z
 
+// al presionar la Z el acelerometro mandara 6000 datos (2mil por cada eje) en 2 segundos y los almacenará en un arreglo
+// luego el arreglo se mostrará en la terminal. la toma de datosse realiza en 2 segundos pero se tarda mas en mosntar, esto debido
+// a la velocidad del coolterm
 void Press_d(void){
 	banderaMuestreo = 1;
 	numeroMuestreo = 0;
@@ -571,6 +589,7 @@ void Press_d(void){
 	usartDataReceived = '\0';
 }//FIN PRESS D
 
+// Se mostrara de forma continua los datos a 1KHz, los datos se ven en cascada y se presiona cualquier tecla para dejar de mostrarlos
 void Press_l(void){
 	banderaMuestreo = 1;
 	while(numeroMuestreo < 2000){
@@ -601,6 +620,21 @@ void Press_l(void){
 		DuttyZ = 830 * ((AccelZ/210.f)*9.78) + 10000;
 		updateDuttyCycle(&handerPWMZ, DuttyZ);
 
+		if(banderaLCD == 1){
+			sprintf(bufferx,"%.2f m/s2  ",(AccelX / 210.f) * 9.78);
+			sprintf(buffery,"%.2f m/s2  ",(AccelY / 210.f) * 9.78);
+			sprintf(bufferz,"%.2f m/s2  ",(AccelZ / 210.f) * 9.78);
+
+			moverCursorLCD(&handlerLCD, 0, 8);
+			sendMSJCD(&handlerLCD, bufferx);
+			moverCursorLCD(&handlerLCD, 1, 8);
+			sendMSJCD(&handlerLCD, buffery);
+			moverCursorLCD(&handlerLCD, 2, 8);
+			sendMSJCD(&handlerLCD, bufferz);
+
+			banderaLCD =0;
+		}
+
 
 		if(usartDataReceived != 'l'){
 			numeroMuestreo = 2000;
@@ -615,12 +649,14 @@ void BasicTimer2_Callback(void){
 
 	GPIOxTooglePin(&handlerLEDBlinky);
 }
+//Timmer a 1KHz para tomar datos del acelerometro
 void BasicTimer4_Callback(void){
 	if(banderaMuestreo == 1){
 		numeroMuestreo++;
 		infinito++;
 	}
 }
+// timer de 1 segundo para la LCD
 void BasicTimer5_Callback(void){
 
 	banderaLCD = 1;
