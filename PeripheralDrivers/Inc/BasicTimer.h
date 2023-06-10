@@ -20,6 +20,9 @@
 #define BTIMER_SPEED_PLL80_10us     800
 #define BTIMER_SPEED_PLL80_100us    8000
 #define BTIMER_SPEED_PLL80_1ms      80000 //Este no funciona debido al limite, el cual es aprox 65K
+#define BTIMER_SPEED_PLL100_10us    1000
+#define BTIMER_SPEED_PLL100_100us   10000
+#define BTIMER_SPEED_PLL100_1ms     100000 //Este no funciona debido al limite, el cual es aprox 65K
 
 #define BTIMER_INTERRUPT_ENABLE   1
 #define BTIMER_INTERRUPT_DISABLE  0

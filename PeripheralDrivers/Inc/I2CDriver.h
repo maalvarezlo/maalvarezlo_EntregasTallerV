@@ -14,21 +14,29 @@
 #define MAIN_CLOCK_16_MHz_FOR_I2C    16
 #define MAIN_CLOCK_20_MHz_FOR_I2C    20
 #define MAIN_CLOCK_40_MHz_FOR_I2C    40
+#define MAIN_CLOCK_50_MHz_FOR_I2C    50
 
 
 #define I2C_MODE_SM          0
 #define I2C_MODE_FM          1
 
-////16MHz
-//#define I2C_MODE_SM_SPEED_100KHz           80
-//#define I2C_MODE_FM_SPEED_400KHz           14
+//16MHz
+#define I2C_MODE_SM_SPEED_100KHz           80
+#define I2C_MODE_FM_SPEED_400KHz           14
 
 //80MHz
-#define I2C_MODE_SM_SPEED_100KHz          200
-#define I2C_MODE_FM_SPEED_400KHz           33
+//#define I2C_MODE_SM_SPEED_100KHz          200
+//#define I2C_MODE_FM_SPEED_400KHz           33
 
+////100MHz
+//#define I2C_MODE_SM_SPEED_100KHz          250
+//#define I2C_MODE_FM_SPEED_400KHz           42
+
+//16MHz
 #define I2C_MAX_RISE_TIME_SM         17
 #define I2C_MAX_RISE_TIME_FM         6
+
+
 
 typedef struct
 {
