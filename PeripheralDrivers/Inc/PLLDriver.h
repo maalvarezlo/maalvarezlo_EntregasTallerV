@@ -18,6 +18,7 @@
 #define Reloj_LSE               1
 #define Reloj_PLL               2
 
+#define Preescaler_1            1
 #define Preescaler_2            2
 #define Preescaler_3            3
 #define Preescaler_4            4

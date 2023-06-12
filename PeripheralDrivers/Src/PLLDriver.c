@@ -229,6 +229,9 @@ void configMCO1(MCO1_Handler_t *ptrHandlerMCO1){
 			RCC->CFGR |= RCC_CFGR_MCO1PRE_1;
 			RCC->CFGR |= RCC_CFGR_MCO1PRE_2;
 		}
+		else if(ptrHandlerMCO1->Preescaler == Preescaler_1){
+			RCC->CFGR &= ~RCC_CFGR_MCO1PRE_2;
+		}
 	}
 	else if(ptrHandlerMCO1->Reloj == Reloj_LSE){
 		RCC->CFGR |= RCC_CFGR_MCO1_0;
@@ -253,6 +256,9 @@ void configMCO1(MCO1_Handler_t *ptrHandlerMCO1){
 			RCC->CFGR |= RCC_CFGR_MCO1PRE_1;
 			RCC->CFGR |= RCC_CFGR_MCO1PRE_2;
 		}
+		else if(ptrHandlerMCO1->Preescaler == Preescaler_1){
+			RCC->CFGR &= ~RCC_CFGR_MCO1PRE_2;
+		}
 	}
 	else if(ptrHandlerMCO1->Reloj == Reloj_PLL){
 		RCC->CFGR |= RCC_CFGR_MCO1_0;
@@ -276,6 +282,9 @@ void configMCO1(MCO1_Handler_t *ptrHandlerMCO1){
 			RCC->CFGR |= RCC_CFGR_MCO1PRE_0;
 			RCC->CFGR |= RCC_CFGR_MCO1PRE_1;
 			RCC->CFGR |= RCC_CFGR_MCO1PRE_2;
+		}
+		else if(ptrHandlerMCO1->Preescaler == Preescaler_1){
+			RCC->CFGR &= ~RCC_CFGR_MCO1PRE_2;
 		}
 	}
 }

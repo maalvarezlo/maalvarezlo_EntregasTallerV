@@ -68,9 +68,9 @@ uint16_t printMSJ                        = 0;
 uint8_t usartDataReceived                = 0;
 char bufferMsj[64]                       = {0};
 char bufferMsj2[64]                      = {0};
-float ArregloX[2000]                     = {0};
-float ArregloY[2000]                     = {0};
-float ArregloZ[2000]                     = {0};
+float ArregloX[256]                     = {0};
+float ArregloY[256]                     = {0};
+float ArregloZ[256]                     = {0};
 uint8_t numeroArreglo                    = 0;
 
 
@@ -563,7 +563,7 @@ void Press_z(void){
 void Press_d(void){
 	banderaMuestreo = 1;
 	numeroMuestreo = 0;
-	while (numeroMuestreo < 2000) {
+	while (numeroMuestreo < 256) {
 		uint8_t AccelX_low = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_XOUT_L);
 		uint8_t AccelX_high = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_XOUT_H);
 		int16_t AccelX = AccelX_high << 8 | AccelX_low;
@@ -582,7 +582,7 @@ void Press_d(void){
 	}
 	banderaMuestreo = 0;
 	numeroMuestreo = 0;
-	for (int i = 0; i < 2000; i++) {
+	for (int i = 0; i < 256; i++) {
 		sprintf(bufferMsj, "X = %.2f m/s² ;  Y = %.2f m/s² ;  Z = %.2f m/s²  | %u \n", ArregloX[i], ArregloY[i], ArregloZ[i], i);
 		writeMsg(&UsartComm, bufferMsj);
 	}

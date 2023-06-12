@@ -55,10 +55,13 @@ EXTI_Config_t Exti                       = {0};
 
 // Comunicacion USART
 RTC_Handler_t handlerRTC                 = {0};
-uint16_t *dato                          = 0;
+uint16_t *dato                           = 0;
 uint8_t horas                            = 0;
 uint8_t minutos                          = 0;
 uint8_t segundos                         = 0;
+uint8_t dia                            = 0;
+uint8_t mes                          = 0;
+uint8_t año                         = 0;
 
 USART_Handler_t UsartComm                = {0};
 GPIO_Handler_t handlerPinTX              = {0};
@@ -80,13 +83,14 @@ bool stringComplete                      = false;
 GPIO_Handler_t handleI2cSDA             = {0};
 GPIO_Handler_t handleI2cSCL             = {0};
 I2C_Handler_t handlerAccelerometer      = {0};
-GPIO_Handler_t handlerI2cSDA2           = {0};
-GPIO_Handler_t handlerI2cSCL2           = {0};
-I2C_Handler_t handlerLCD                = {0};
 uint8_t i2cBuffer                       = 0;
 char bufferx[64]                        = {0};
 char buffery[64]                        = {0};
 char bufferz[64]                        = {0};
+float ArregloX[256]                      = {0};
+float ArregloY[256]                      = {0};
+float ArregloZ[256]                      = {0};
+
 
 
 //acelerometro
@@ -100,7 +104,6 @@ char bufferz[64]                        = {0};
 #define BW_RATE                  44
 #define POWER_CTL                45
 #define WHO_AM_I                 0
-
 
 
 //Definiendo las Funciones
@@ -191,6 +194,14 @@ void init_hardware (void){
 	handlerBlinkyTimer.TIMx_Config.TIMx_interruptEnable     = BTIMER_INTERRUPT_ENABLE;
 	BasicTimer_Config(&handlerBlinkyTimer);
 
+	//Si el timer esta a 100MHz deben usarse la Speed que termina en _PLL100_100us
+	handler1HzTimer.ptrTIMx                              = TIM4;
+	handler1HzTimer.TIMx_Config.TIMx_mode                = BTIMER_MODE_UP ;
+	handler1HzTimer.TIMx_Config.TIMx_speed               = BTIMER_SPEED_PLL100_100us;
+	handler1HzTimer.TIMx_Config.TIMx_period              = 2;
+	handler1HzTimer.TIMx_Config.TIMx_interruptEnable     = BTIMER_INTERRUPT_ENABLE;
+	BasicTimer_Config(&handler1HzTimer);
+
 // Configurando la interrucion del EXTI
 	Exti.edgeType                                           = EXTERNAL_INTERRUPT_FALLING_EDGE;
 	Exti.pGPIOHandler                                       = &handlerpinEXTI;
@@ -258,7 +269,7 @@ void init_hardware (void){
 	handlerAccelerometer.modeI2C            = I2C_MODE_FM;
 	handlerAccelerometer.slaveAddress       = ACCEL_ADDRESS;
 	i2c_config(&handlerAccelerometer);
-	//CAmbiando el muestreo del acelerometro
+	//Cambiando el muestreo del acelerometro
 //	i2c_writeSingleRegister(&handlerAccelerometer, BW_RATE, 0xE);
 
 } // Termina el int_Hardware
@@ -315,18 +326,18 @@ void parseCommands(char *ptrBufferReception){
 
 	}
 	else if(strcmp(cmd, "preescalerMCO1") == 0){
-		if(firstParameter < 6 && firstParameter > 1){
+		if(firstParameter < 6 && firstParameter > 0){
 			handlerMCO1.Preescaler = firstParameter;
 			configMCO1(&handlerMCO1);
 			sprintf(bufferMsj, "El preescaler del MCO1 se configuró a %u \n",firstParameter);
 			writeMsg(&UsartComm, bufferMsj);
 		} else{
-			writeMsg(&UsartComm, "El preescaler seleccionado no es valido,debe ser un valor entre 2 y 5 \n");
+			writeMsg(&UsartComm, "El preescaler seleccionado no es valido,debe ser un valor entre 1 y 5 \n");
 		}
 	}
 	//RTC
 	else if(strcmp(cmd, "actualizarhora") == 0){
-		if(firstParameter > 24 || secondParameter > 60 || thirdParameter > 60 ){
+		if(firstParameter > 23 || secondParameter > 59 || thirdParameter > 59 ){
 			writeMsg(&UsartComm, "Valores erroneos, por favor escriba la hora verdadera \n");
 		} else{
 			handlerRTC.RTC_Config.Horas = firstParameter;
@@ -344,8 +355,40 @@ void parseCommands(char *ptrBufferReception){
 		horas = dato[3];
 		minutos = dato[4];
 		segundos = dato[5];
-		sprintf(bufferMsj, "La hora actua es %u:%u:%u \n", horas, minutos, segundos );
+		sprintf(bufferMsj, "La hora actual es %u:%u:%u \n", horas, minutos, segundos );
 		writeMsg(&UsartComm, bufferMsj);
+	}
+	else if(strcmp(cmd, "actualizarfecha") == 0){
+		if(firstParameter > 30 || secondParameter > 12 || thirdParameter > 100 ){
+			writeMsg(&UsartComm, "Valores erroneos, por favor escriba la fecha verdadera \n");
+		} else{
+			handlerRTC.RTC_Config.NumeroDia = firstParameter;
+			handlerRTC.RTC_Config.Mes= secondParameter;
+			handlerRTC.RTC_Config.Año = thirdParameter;
+			configRTC(&handlerRTC);
+			sprintf(bufferMsj, "\n\rSe actualizó la fecha \ndia:%u  mes:%u  año:%u \n" , firstParameter, secondParameter, thirdParameter);
+			writeMsg(&UsartComm, bufferMsj);
+			sprintf(bufferMsj, "la fecha es %u/%u/%u \n" , firstParameter, secondParameter, thirdParameter);
+			writeMsg(&UsartComm, bufferMsj);
+		}
+	}
+	else if(strcmp(cmd, "fechaactual") == 0){
+		dato = cargarRTC();
+		dia = dato[0];
+		mes = dato[1];
+		año = dato[2];
+		sprintf(bufferMsj, "La fecha actual es %u/%u/%u \n", dia, mes, año );
+		writeMsg(&UsartComm, bufferMsj);
+	}
+	//ACELEROMETRO
+	else if(strcmp(cmd, "resetacel") == 0){
+		Press_r();
+		Press_x();
+		Press_y();
+		Press_z();
+	}
+	else if(strcmp(cmd, "tomardatosacel") == 0){
+		Press_d();
 	}
 
 
@@ -357,82 +400,65 @@ void parseCommands(char *ptrBufferReception){
 }
 
 void Press_r(void){
-	sprintf(bufferMsj, "PWR_MGMT_1 reset (w)\n");
+	sprintf(bufferMsj, "PWR_MGMT_1 reset\n");
 	writeMsg(&UsartComm, bufferMsj);
-
 	i2c_writeSingleRegister(&handlerAccelerometer, POWER_CTL , 0x2D);
-	usartDataReceived = '\0';
 }//FIN PRESS R
 
 void Press_x(void){
-	sprintf(bufferMsj, "Axis X data (r) \n");
-	writeMsg(&UsartComm, bufferMsj);
-
 	uint8_t AccelX_low =  i2c_readSingleRegister(&handlerAccelerometer, ACCEL_XOUT_L);
 	uint8_t AccelX_high = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_XOUT_H);
 	int16_t AccelX = AccelX_high << 8 | AccelX_low;
 	sprintf(bufferMsj, "AccelX = %.2f m/s² \n", (AccelX/210.f)*9.78);
 	writeMsg(&UsartComm, bufferMsj);
-	usartDataReceived = '\0';
 }//FIN PRESS X
 
 void Press_y(void){
-	sprintf(bufferMsj, "Axis Y data (r)\n");
-	writeMsg(&UsartComm, bufferMsj);
-
 	uint8_t AccelY_low = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_YOUT_L);
 	uint8_t AccelY_high = i2c_readSingleRegister(&handlerAccelerometer,ACCEL_YOUT_H);
 	int16_t AccelY = AccelY_high << 8 | AccelY_low;
 	sprintf(bufferMsj, "AccelY = %.2f m/s² \n", (AccelY/210.f)*9.78);
 	writeMsg(&UsartComm, bufferMsj);
-	usartDataReceived = '\0';
 }//FIN PRESS Y
 
 void Press_z(void){
-	sprintf(bufferMsj, "Axis Z data (r)\n");
-	writeMsg(&UsartComm, bufferMsj);
-
 	uint8_t AccelZ_low = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_ZOUT_L);
 	uint8_t AccelZ_high = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_ZOUT_H);
 	int16_t AccelZ = AccelZ_high << 8 | AccelZ_low;
 	sprintf(bufferMsj, "AccelZ = %.2f m/s² \n", (AccelZ/210.f)*9.78);
 	writeMsg(&UsartComm, bufferMsj);
-	usartDataReceived = '\0';
 }//FIN PRESS Z
 
 
 
-// Se mostrara de forma continua los datos a 1KHz, los datos se ven en cascada y se presiona cualquier tecla para dejar de mostrarlos
-void Press_l(void){
+void Press_d(void){
 	banderaMuestreo = 1;
-	while(numeroMuestreo < 2000){
-		uint8_t AccelX_low =  i2c_readSingleRegister(&handlerAccelerometer, ACCEL_XOUT_L);
+	numeroMuestreo = 0;
+	while (numeroMuestreo < 256) {
+		uint8_t AccelX_low = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_XOUT_L);
 		uint8_t AccelX_high = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_XOUT_H);
 		int16_t AccelX = AccelX_high << 8 | AccelX_low;
-		sprintf(bufferMsj, "AccelX = %.2f m/s² \n", (AccelX/210.f)*9.78);
-		writeMsg(&UsartComm, bufferMsj);
 
 		uint8_t AccelY_low = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_YOUT_L);
-		uint8_t AccelY_high = i2c_readSingleRegister(&handlerAccelerometer,ACCEL_YOUT_H);
+		uint8_t AccelY_high = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_YOUT_H);
 		int16_t AccelY = AccelY_high << 8 | AccelY_low;
-		sprintf(bufferMsj, "AccelY = %.2f m/s² \n", (AccelY/210.f)*9.78);
-		writeMsg(&UsartComm, bufferMsj);
-
 
 		uint8_t AccelZ_low = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_ZOUT_L);
 		uint8_t AccelZ_high = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_ZOUT_H);
 		int16_t AccelZ = AccelZ_high << 8 | AccelZ_low;
-		sprintf(bufferMsj, "AccelZ = %.2f m/s² \n", (AccelZ/210.f)*9.78);
-		writeMsg(&UsartComm, bufferMsj);
-		numeroMuestreo = 0; // para que nunca salga del while hasta que se precione otra tecla
 
-
-		if(usartDataReceived != 'l'){
-			numeroMuestreo = 2000;
-		}
+		ArregloX[numeroMuestreo] = (AccelX / 210.f) * 9.78;
+		ArregloY[numeroMuestreo] = (AccelY / 210.f) * 9.78;
+		ArregloZ[numeroMuestreo] = (AccelZ / 210.f) * 9.78;
 	}
+	banderaMuestreo = 0;
 	numeroMuestreo = 0;
-}//FIN PRESS L
+	for (int i = 0; i < 256; i++) {
+		sprintf(bufferMsj, "X = %.2f m/s² ;  Y = %.2f m/s² ;  Z = %.2f m/s²  | %u \n", ArregloX[i], ArregloY[i], ArregloZ[i], i);
+		writeMsg(&UsartComm, bufferMsj);
+	}
+	usartDataReceived = '\0';
+}//FIN PRESS D
 
 
 // aca se ejecuta el Blinky

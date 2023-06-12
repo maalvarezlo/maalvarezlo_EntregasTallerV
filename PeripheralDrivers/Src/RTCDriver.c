@@ -94,6 +94,9 @@ void configRTC(RTC_Handler_t *ptrRTCConfig){
 
 	//ponemos en 0 el bit para seleccionar los registros sombra
 	RTC->CR &= ~RTC_CR_BYPSHAD;
+	// para volver a bloquer se puede escribir cualquier otra clave en los bit WPR
+	RTC->WPR = 0x0;
+
 }
 
 void *cargarRTC(void){
@@ -110,17 +113,17 @@ void *cargarRTC(void){
 	 uint32_t HoraCompleta = 0;
 	 HoraCompleta = RTC->TR;
 	 //convertimos los bits respectivos
-	 Horas   = convertBcdRTC(((HoraCompleta & 0x3F0000) >> 16));
-	 Minutos = convertBcdRTC(((HoraCompleta & 0x007F00) >> 8));
-	 Segundos = convertBcdRTC((HoraCompleta  & 0x7F));
+	 Horas   = convertBcdRTC(((HoraCompleta & (0b111111<<16)) >> 16));
+	 Minutos = convertBcdRTC(((HoraCompleta & (0b1111111<<8)) >> 8));
+	 Segundos = convertBcdRTC((HoraCompleta  & 0b1111111));
 
 	 //leemos todo el registro DR para tener la Fecha completa en BCD
 	 uint32_t FechaCompleta = 0;
 	 FechaCompleta = RTC->DR;
 	 //Convertimos los bits respectivos
-	 Año = convertBcdRTC(((FechaCompleta & 0xFF0000) >> 16));
-	 Mes = convertBcdRTC(((FechaCompleta & 0x1F00)   >> 8));
-	 Dia = convertBcdRTC((FechaCompleta  & 0x3F));
+	 Año = convertBcdRTC(((FechaCompleta & (0b11111111<<16)) >> 16));
+	 Mes = convertBcdRTC(((FechaCompleta & (0b11111<<8)) >> 8));
+	 Dia = convertBcdRTC((FechaCompleta  & 0b111111));
 
 
 	 datos[0] = Dia;
