@@ -129,6 +129,12 @@ void adc_Config(ADC_Config_t *adcConfig){
 	/* 13. Activamos las interrupciones globales */
 	// Escriba su código acá
 	__enable_irq();
+
+	//USAMOS EL PWM PARA GENERAR EL ADC CON EVENTOS del PWM TIMER 4 CANAL 1
+	ADC1->CR2 |= ADC_CR2_EXTEN_0;
+	ADC1->CR2 &= ~ADC_CR2_EXTEN_1;
+
+	ADC1->CR2 = 9 << ADC_CR2_EXTSEL_Pos;
 }
 
 /*
@@ -454,12 +460,11 @@ void ConfigMultichannelADC (ADC_Config_t *adcConfig, uint8_t numeroDeCanales){
 	/* 13. Activamos las interrupciones globales */
 	__enable_irq();
 
-	//USAMOS EL PWM PARA GENERAR EL ADC CON EVENTOS del PWM
+	//USAMOS EL PWM PARA GENERAR EL ADC CON EVENTOS del PWM TIMER 3 CANAL 1
 	ADC1->CR2 |= ADC_CR2_EXTEN_0;
 	ADC1->CR2 &= ~ADC_CR2_EXTEN_1;
 
-	ADC1->CR2 = 9 << ADC_CR2_EXTSEL_Pos;
-
+	ADC1->CR2 = 0b0111 << ADC_CR2_EXTSEL_Pos;
 
 
 }
