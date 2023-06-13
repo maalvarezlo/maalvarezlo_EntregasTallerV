@@ -130,17 +130,13 @@ uint16_t fftSize = 1024;
 
 //Definiendo las Funciones
 void init_hardware (void);
-void Loop_Principal(void);
 void parseCommands(char *ptrBufferReception);
-void Menu(void);
-void Press_w(void);
-void Press_p(void);
 void Press_r(void);
 void Press_x(void);
 void Press_y(void);
 void Press_z(void);
 void Press_d(void);
-void Press_l(void);
+void inicializacion(void);
 
 
 
@@ -149,6 +145,7 @@ int main(void){
 	SCB->CPACR |= (0xF <<20);
 /*Inicialización de todos los elementos del sistema*/
 	init_hardware();
+	inicializacion();
 
 	while(1){
 
@@ -298,7 +295,6 @@ void init_hardware (void){
 
 	//PWM para el ADC
 	/*Cargamos la configuración de los registros del MCU*/
-
 	handlerPWMADC.ptrTIMx               = TIM3;
 	handlerPWMADC.config.channel        = PWM_CHANNEL_1;
 	handlerPWMADC.config.duttyCicle     = 500;
@@ -308,6 +304,7 @@ void init_hardware (void){
 	startPwmSignal(&handlerPWMADC);
 	enableOutput(&handlerPWMADC);
 
+	//Pin para ver el pwm obtenido PB4
 	handlerPinPWMZ.pGPIOx                                 = GPIOB;
 	handlerPinPWMZ.GPIO_PinConfig.GPIO_PinNumber          = PIN_4;
 	handlerPinPWMZ.GPIO_PinConfig.GPIO_PinMode            = GPIO_MODE_ALTFN;
@@ -317,12 +314,9 @@ void init_hardware (void){
 	handlerPinPWMZ.GPIO_PinConfig.GPIO_PinAltFunMode      = AF2;
 	GPIO_Config(&handlerPinPWMZ);
 
-
-
 } // Termina el int_Hardware
 
-//COMANDOS		if(firstParameter == 0){
-
+//COMANDOS
 void parseCommands(char *ptrBufferReception){
 
 	sscanf(ptrBufferReception, "%s %u %u %u %s", cmd, &firstParameter, &secondParameter, &thirdParameter, userMsg);
@@ -346,6 +340,7 @@ void parseCommands(char *ptrBufferReception){
 		writeMsg(&UsartComm, "- Escribe el comando \"initFFT\" para inicializar la funcion FFT \n");
 		writeMsg(&UsartComm, "- Escribe el comando \"FFT\" para tomar  todos los datos del acelerometro, y mostrar la frecuencia fundamental \n");
 	}
+	//comando para cambiar el reloj del MCO1
 	else if(strcmp(cmd, "relojMCO1") == 0){
 		if(firstParameter == 0){
 			handlerMCO1.Reloj = firstParameter;
@@ -364,6 +359,7 @@ void parseCommands(char *ptrBufferReception){
 			writeMsg(&UsartComm, bufferMsj);
 		}
 	}
+	//comando para cambiar el preescaler del MCO1
 	else if(strcmp(cmd, "preescalerMCO1") == 0){
 		if(firstParameter < 6 && firstParameter > 0){
 			handlerMCO1.Preescaler = firstParameter;
@@ -374,7 +370,7 @@ void parseCommands(char *ptrBufferReception){
 			writeMsg(&UsartComm, "El preescaler seleccionado no es valido, debe ser un valor entre 1 y 5 \n");
 		}
 	}
-	//RTC
+	//RTC, comando para actualizar la hora
 	else if(strcmp(cmd, "actualizarhora") == 0){
 		if(firstParameter > 23 || secondParameter > 59 || thirdParameter > 59 ){
 			writeMsg(&UsartComm, "Valores erroneos, por favor escriba la hora verdadera \n \n");
@@ -389,6 +385,7 @@ void parseCommands(char *ptrBufferReception){
 			writeMsg(&UsartComm, bufferMsj);
 		}
 	}
+	//RTC, comando para ver la hora actual
 	else if(strcmp(cmd, "horaactual") == 0){
 		dato = cargarRTC();
 		horas = dato[3];
@@ -397,6 +394,7 @@ void parseCommands(char *ptrBufferReception){
 		sprintf(bufferMsj, "La hora actual es %u:%u:%u \n \n", horas, minutos, segundos );
 		writeMsg(&UsartComm, bufferMsj);
 	}
+	//RTC, comando para actualizar la fecha actual
 	else if(strcmp(cmd, "actualizarfecha") == 0){
 		if(firstParameter > 30 || secondParameter > 12 || thirdParameter > 99 ){
 			writeMsg(&UsartComm, "Valores erroneos, por favor escriba la fecha verdadera \n \n");
@@ -411,6 +409,7 @@ void parseCommands(char *ptrBufferReception){
 			writeMsg(&UsartComm, bufferMsj);
 		}
 	}
+	//RTC, comando para ver la fecha actual
 	else if(strcmp(cmd, "fechaactual") == 0){
 		dato = cargarRTC();
 		dia = dato[0];
@@ -419,10 +418,10 @@ void parseCommands(char *ptrBufferReception){
 		sprintf(bufferMsj, "La fecha actual es %u/%u/%u \n \n", dia, mes, año+2000);
 		writeMsg(&UsartComm, bufferMsj);
 	}
-
+	//comando para actualizar la frecuencia de sampleo del ADC
 	else if(strcmp(cmd, "actualizarsamp") == 0){
 		if((firstParameter>=800)&&(firstParameter<=1500)){
-			freqADC = (uint16_t)(((float)(1/firstParameter))*1000000)/10;
+			freqADC = (uint16_t)(((float)(1/firstParameter))*10000);
 			updateFrequency(&handlerPWMADC, freqADC);
 			updateDuttyCycle(&handlerPWMADC, freqADC/2);
 			sprintf(bufferMsj, "La nueva frecuencia de sampleo se establecio en %u Hz \n", firstParameter*10);
@@ -433,7 +432,7 @@ void parseCommands(char *ptrBufferReception){
 			writeMsg(&UsartComm, "Incorrect frequency, must be an integer value between 800 Hz and 3000 Hz \n");
 		}
 	}
-
+	// comando para sacar los datos de las dos señales del ADC
 	else if(strcmp(cmd, "adc") == 0){
 		startPwmSignal(&handlerPWMADC);
 		writeMsg(&UsartComm, "Tomando datos \n");
@@ -448,13 +447,14 @@ void parseCommands(char *ptrBufferReception){
 			}
 		}
 
-	//ACELEROMETRO
+	//ACELEROMETRO, reset
 	else if(strcmp(cmd, "resetacel") == 0){
 		Press_r();
 		Press_x();
 		Press_y();
 		Press_z();
 	}
+	//se inicializa la funcion de FFT
 	else if(strcmp(cmd, "initFFT") == 0){
 		statusInitFFT = arm_rfft_fast_init_f32(&config_Rfft_fast_f32, fftSize);
 
@@ -464,7 +464,7 @@ void parseCommands(char *ptrBufferReception){
 		}
 	}
 
-	// FFT
+	// se toman los datos y se imprime la frecuencia obtenida por el FFT
 	else if (strcmp(cmd, "FFT") == 0){
 		sprintf(bufferMsj, "Tomando los datos con el acelerometro, espere 5 segundos \n");
 		writeMsg(&UsartComm, bufferMsj);
@@ -493,7 +493,7 @@ void parseCommands(char *ptrBufferReception){
 		}
 		sprintf(bufferMsj, "el subindice de la frecuencia fundamental es %u \n", indiceFFT);
 		writeMsg(&UsartComm, bufferMsj);
-		FrecuenciaF = (indiceFFT*200/(fftSize));
+		FrecuenciaF = (float)(indiceFFT*200/(fftSize));
 		sprintf(bufferMsj, "La frecuencia es %#.4f Hz \n", FrecuenciaF);
 		writeMsg(&UsartComm, bufferMsj);
 	}
@@ -503,6 +503,40 @@ void parseCommands(char *ptrBufferReception){
 	}
 
 }
+
+void inicializacion(void){
+	sprintf(bufferMsj,
+			"Hola, soy el MCU de Mateo y tengo una frecuencia de %d Hz \n ",
+			getConfigPLL());
+	writeMsg(&UsartComm, bufferMsj);
+	writeMsg(&UsartComm,
+			"- Escribe el comando help para mostrar este menu cuando desees.\n");
+	writeMsg(&UsartComm,
+			"- Escribe el comando \"relojMCO1 #\" para seleccionar el reloj del pin PA8. \n");
+	writeMsg(&UsartComm, "HSI = 0 ; LSE = 1 ; PLL = 2 \n ");
+	writeMsg(&UsartComm,
+			"- Escribe el comando \"preescalerMCO1 #\" para cambiar el preescaler del micro \n");
+	writeMsg(&UsartComm, "El preescaler debe ser del 1 al 5 \n");
+	writeMsg(&UsartComm,
+			"- Escribe el comando \"actualizarhora h# m# s#\" para actualizar la hora (el formato es 24H) \n");
+	writeMsg(&UsartComm,
+			"- Escribe el comando \"horaactual\" para ver la hora actual \n");
+	writeMsg(&UsartComm,
+			"- Escribe el comando \"actualizafecha d# m# a#\" para actualizar la fecha (el formato es dm/mm/aa) \n");
+	writeMsg(&UsartComm,
+			"- Escribe el comando \"fechaactual\" para ver la fecha actual \n");
+	writeMsg(&UsartComm,
+			"- Escribe el comando \"actualizarsamp #\" actualizar la frecuencia de sampleo del PWM del ADC (800-1500) \n");
+	writeMsg(&UsartComm,
+			"- Escribe el comando \"adc\" para obtener ambos los valores de las señales obtenidas por el ADC\n");
+	writeMsg(&UsartComm,
+			"- Escribe el comando \"resetacel\" para resetear el acelerometro \n");
+	writeMsg(&UsartComm,
+			"- Escribe el comando \"initFFT\" para inicializar la funcion FFT \n");
+	writeMsg(&UsartComm,
+			"- Escribe el comando \"FFT\" para tomar  todos los datos del acelerometro, y mostrar la frecuencia fundamental \n");
+}
+
 
 void Press_r(void){
 	sprintf(bufferMsj, "PWR_MGMT_1 reset\n");
