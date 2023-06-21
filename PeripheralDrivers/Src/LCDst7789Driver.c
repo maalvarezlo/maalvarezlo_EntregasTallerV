@@ -26,18 +26,9 @@ void LCD_configPin(void){
 	handlerDIN.GPIO_PinConfig.GPIO_PinAltFunMode       = AF5;
 	GPIO_Config(&handlerDIN);
 
-	handlerMISO.pGPIOx = GPIOA;
-	handlerMISO.GPIO_PinConfig.GPIO_PinNumber           = PIN_6;
-	handlerMISO.GPIO_PinConfig.GPIO_PinMode             = GPIO_MODE_ALTFN;
-	handlerMISO.GPIO_PinConfig.GPIO_PinOPType           = GPIO_OTYPE_PUSHPULL;
-	handlerMISO.GPIO_PinConfig.GPIO_PinSpeed            = GPIO_OSPEED_HIGH;
-	handlerMISO.GPIO_PinConfig.GPIO_PinPuPdControl      = GPIO_PUPDR_NOTHING;
-	handlerMISO.GPIO_PinConfig.GPIO_PinAltFunMode       = AF5;
-	GPIO_Config(&handlerMISO);
-
-	handlerCLK.pGPIOx = GPIOA;
-	handlerCLK.GPIO_PinConfig.GPIO_PinNumber           = PIN_5;
-	handlerCLK.GPIO_PinConfig.GPIO_PinMode             = GPIO_MODE_OUT;
+	handlerCLK.pGPIOx = GPIOB;
+	handlerCLK.GPIO_PinConfig.GPIO_PinNumber           = PIN_3;
+	handlerCLK.GPIO_PinConfig.GPIO_PinMode             = GPIO_MODE_ALTFN;
 	handlerCLK.GPIO_PinConfig.GPIO_PinOPType           = GPIO_OTYPE_PUSHPULL;
 	handlerCLK.GPIO_PinConfig.GPIO_PinSpeed            = GPIO_OSPEED_HIGH;
 	handlerCLK.GPIO_PinConfig.GPIO_PinPuPdControl      = GPIO_PUPDR_NOTHING;
@@ -80,7 +71,7 @@ void LCD_configPin(void){
 	handlerSPI.ptrSPIx                         = SPI1;
 	handlerSPI.SPI_Config.SPI_mode             = SPI_MODE_3;
 	handlerSPI.SPI_Config.SPI_baudrate         = SPI_BAUDRATE_FPCLK_4;
-	handlerSPI.SPI_Config.SPI_datasize         = SPI_DATASIZE_16_BIT;
+	handlerSPI.SPI_Config.SPI_datasize         = SPI_DATASIZE_8_BIT;
 	handlerSPI.SPI_Config.SPI_fullDupplexEnable         = SPI_FULL_DUPPLEX;
 	spi_config(handlerSPI);
 
@@ -100,10 +91,17 @@ function:
 		Write data and commands
 *******************************************************************************/
 void LCD_Write_Command(uint8_t cmd){
-	GPIO_WritePin(&handlerCS, RESET); //Deben ser los handler usando la funcion WRITEPIN
+	GPIO_WritePin(&handlerCS, RESET);
 	GPIO_WritePin(&handlerDC, RESET);
 	spi_transmit(handlerSPI, &cmd, 1);
 }
+//void initcom(void){
+//	GPIO_WritePin(&handlerCS, RESET);
+//}
+//
+//void endcom(void){
+//	GPIO_WritePin(&handlerCS, SET);
+//}
 
 void LCD_WriteData_Word(uint8_t *buff, uint32_t buff_size){
 	GPIO_WritePin(&handlerCS, RESET);
@@ -116,7 +114,7 @@ void LCD_WriteData_Byte(uint8_t data){
 	GPIO_WritePin(&handlerCS, RESET);
 	GPIO_WritePin(&handlerDC, SET);
 	spi_transmit(handlerSPI, &data, 1);
-	GPIO_WritePin(&handlerCS,SET);
+	GPIO_WritePin(&handlerCS, SET);
 }  
 
 
@@ -165,13 +163,13 @@ void LCD_Init(void){
 	LCD_WriteData_Byte(0x01);
 
 	LCD_Write_Command(0xC3);
-	LCD_WriteData_Byte(0x12);   
+	LCD_WriteData_Byte(0x12);
 
 	LCD_Write_Command(0xC4);
 	LCD_WriteData_Byte(0x20);
 
 	LCD_Write_Command(0xC6);
-	LCD_WriteData_Byte(0x0F); 
+	LCD_WriteData_Byte(0x0F);
 
 	LCD_Write_Command(0xD0);
 	LCD_WriteData_Byte(0xA4);
@@ -208,25 +206,29 @@ void LCD_Init(void){
 	LCD_WriteData_Byte(0x14);
 	LCD_WriteData_Byte(0x2F);
 	LCD_WriteData_Byte(0x31);
+
 	LCD_Write_Command(0x21);
 
 	LCD_Write_Command(0x11);
 
 	LCD_Write_Command(0x29);
+
 }
 
 void LCD_SetWindow(uint16_t x_start, uint16_t y_start, uint16_t x_end, uint16_t  y_end){ 
+
+
 	LCD_Write_Command(0x2A);
-	LCD_WriteData_Byte(0x00);
+//	LCD_WriteData_Byte(0x00);
 	/* Column Address set */
 	uint8_t datax[] = {x_start >> 8, x_start & 0xFF, (x_end-1) >> 8, (x_end-1) & 0xFF};
-	LCD_WriteData_Word(datax, sizeof(datax));
+	LCD_WriteData_Word(datax, 4);
 
 	LCD_Write_Command(0x2B);
-	LCD_WriteData_Byte(0x00);
+//	LCD_WriteData_Byte(0x00);
 	/* Row Address set */
 	uint8_t datay[] = {y_start >> 8, y_start & 0xFF, (y_end-1) >> 8, (y_end-1) & 0xFF};
-	LCD_WriteData_Word(datay, sizeof(datay));
+	LCD_WriteData_Word(datay, 5);
 
 	LCD_Write_Command(0x2C);
 }

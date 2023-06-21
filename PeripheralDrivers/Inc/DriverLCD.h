@@ -19,7 +19,8 @@ void LimpiarLCD(I2C_Handler_t *ptrHandlerI2C);
 void moverCursorLCD(I2C_Handler_t *ptrHandlerI2C, uint8_t x, uint8_t y);
 void ResetScreenLCD(I2C_Handler_t *ptrHandlerI2C);
 void EscribirLCD(I2C_Handler_t *ptrHandlerI2C, uint8_t dataToWrite);
-
+void initcom(void);
+void endcom(void);
 
 #endif /* DRIVERLCD_H_ */
 

@@ -68,7 +68,7 @@ void spi_config(SPI_Handler_t ptrHandlerSPI){
 	}
 
 	//6. Modo de transferencia en MSB-first
-	ptrHandlerSPI.ptrSPIx->CR1 |= SPI_CR1_LSBFIRST;
+	ptrHandlerSPI.ptrSPIx->CR1 &= ~SPI_CR1_LSBFIRST;
 
 	//7. Activamos para que el equipo se comporte como maestro de la red
 	ptrHandlerSPI.ptrSPIx->CR1 |= SPI_CR1_MSTR;

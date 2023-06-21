@@ -26,6 +26,7 @@
 #include "RTCDriver.h"
 #include "AdcDriver.h"
 #include "LCDst7789Driver.h"
+//#include "st7789.h"
 
 
 
@@ -150,7 +151,7 @@ int main(void){
 	inicializacion();
 	LCD_configPin();
 	LCD_Init();
-	LCD_Fill_Color(WHITE);
+	LCD_Fill_Color(RED);
 	while(1){
 
 
