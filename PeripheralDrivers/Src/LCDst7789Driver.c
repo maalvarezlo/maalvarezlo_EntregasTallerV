@@ -26,8 +26,8 @@ void LCD_configPin(void){
 	handlerDIN.GPIO_PinConfig.GPIO_PinAltFunMode       = AF5;
 	GPIO_Config(&handlerDIN);
 
-	handlerCLK.pGPIOx = GPIOB;
-	handlerCLK.GPIO_PinConfig.GPIO_PinNumber           = PIN_3;
+	handlerCLK.pGPIOx = GPIOA;
+	handlerCLK.GPIO_PinConfig.GPIO_PinNumber           = PIN_5;
 	handlerCLK.GPIO_PinConfig.GPIO_PinMode             = GPIO_MODE_ALTFN;
 	handlerCLK.GPIO_PinConfig.GPIO_PinOPType           = GPIO_OTYPE_PUSHPULL;
 	handlerCLK.GPIO_PinConfig.GPIO_PinSpeed            = GPIO_OSPEED_HIGH;
@@ -35,15 +35,15 @@ void LCD_configPin(void){
 	handlerCLK.GPIO_PinConfig.GPIO_PinAltFunMode       = AF5;
 	GPIO_Config(&handlerCLK);
 
-	handlerCS.pGPIOx = GPIOA;
-	handlerCS.GPIO_PinConfig.GPIO_PinNumber           = PIN_10;
+	handlerCS.pGPIOx = GPIOB;
+	handlerCS.GPIO_PinConfig.GPIO_PinNumber           = PIN_15;
 	handlerCS.GPIO_PinConfig.GPIO_PinMode             = GPIO_MODE_OUT;
 	handlerCS.GPIO_PinConfig.GPIO_PinOPType           = GPIO_OTYPE_PUSHPULL;
 	handlerCS.GPIO_PinConfig.GPIO_PinSpeed            = GPIO_OSPEED_HIGH;
 	handlerCS.GPIO_PinConfig.GPIO_PinPuPdControl      = GPIO_PUPDR_NOTHING;
 	GPIO_Config(&handlerCS);
 
-	handlerDC.pGPIOx = GPIOA;
+	handlerDC.pGPIOx = GPIOB;
 	handlerDC.GPIO_PinConfig.GPIO_PinNumber           = PIN_1;
 	handlerDC.GPIO_PinConfig.GPIO_PinMode             = GPIO_MODE_OUT;
 	handlerDC.GPIO_PinConfig.GPIO_PinOPType           = GPIO_OTYPE_PUSHPULL;
@@ -51,8 +51,8 @@ void LCD_configPin(void){
 	handlerDC.GPIO_PinConfig.GPIO_PinPuPdControl      = GPIO_PUPDR_NOTHING;
 	GPIO_Config(&handlerDC);
 
-	handlerRST.pGPIOx = GPIOA;
-	handlerRST.GPIO_PinConfig.GPIO_PinNumber           = PIN_0;
+	handlerRST.pGPIOx = GPIOB;
+	handlerRST.GPIO_PinConfig.GPIO_PinNumber           = PIN_2;
 	handlerRST.GPIO_PinConfig.GPIO_PinMode             = GPIO_MODE_OUT;
 	handlerRST.GPIO_PinConfig.GPIO_PinOPType           = GPIO_OTYPE_PUSHPULL;
 	handlerRST.GPIO_PinConfig.GPIO_PinSpeed            = GPIO_OSPEED_HIGH;
@@ -68,11 +68,11 @@ void LCD_configPin(void){
 //	GPIO_Config(&handlerBL);
 
 	//SPI
-	handlerSPI.ptrSPIx                         = SPI1;
-	handlerSPI.SPI_Config.SPI_mode             = SPI_MODE_3;
-	handlerSPI.SPI_Config.SPI_baudrate         = SPI_BAUDRATE_FPCLK_2;
-	handlerSPI.SPI_Config.SPI_datasize         = SPI_DATASIZE_8_BIT;
-	handlerSPI.SPI_Config.SPI_fullDupplexEnable         = SPI_FULL_DUPPLEX;
+	handlerSPI.ptrSPIx                            = SPI1;
+	handlerSPI.SPI_Config.SPI_mode                = SPI_MODE_3;
+	handlerSPI.SPI_Config.SPI_baudrate            = SPI_BAUDRATE_FPCLK_2;
+	handlerSPI.SPI_Config.SPI_datasize            = SPI_DATASIZE_8_BIT;
+	handlerSPI.SPI_Config.SPI_fullDupplexEnable   = SPI_FULL_DUPPLEX;
 	spi_config(handlerSPI);
 
 }

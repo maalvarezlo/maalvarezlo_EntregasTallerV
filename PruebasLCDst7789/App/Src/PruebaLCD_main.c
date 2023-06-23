@@ -150,9 +150,9 @@ int main(void){
 	inicializacion();
 	LCD_configPin();
 	LCD_Init();
-	LCD_Fill_Color(BLUE);
+	LCD_Fill_Color(WHITE);
 	delay_ms(5000);
-	LCD_Fill_Color(RED);
+	LCD_Fill_Color(BLACK);
 
 	while(1){
 		// cuando el usuario presione una de las siguientes teclas se activara su funcion respectiva
@@ -515,7 +515,7 @@ void BasicTimer2_Callback(void){
 
 
 //recibir datos con el usart
-void usart6Rx_Callback(void){
+void usart2Rx_Callback(void){
 	usartDataReceived = getRxData();
 }
 
