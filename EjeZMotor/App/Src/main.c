@@ -64,7 +64,7 @@ int main(void){
 	/* Para calcular los pasos de está altura de capa (teniendo en cuenta el motor y la varilla roscada*/
 	AlturaCapaPasos = (AlturaCapamm*200)/8;
 
-	config_SysTick_ms(0);
+	config_SysTick_ms(SYSTICK_LOAD_VALUE_16MHz_1ms);
 
 	while(1){
 

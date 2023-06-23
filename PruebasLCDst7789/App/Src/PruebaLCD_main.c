@@ -26,13 +26,12 @@
 #include "RTCDriver.h"
 #include "AdcDriver.h"
 #include "LCDst7789Driver.h"
-//#include "st7789.h"
 
 
 
 /* Definicion de los elementos del sistema */
 /*Handler PLL para la velocidad del micro*/
-PLL_Handler_t handlerPLL100MHz            = {0};
+PLL_Handler_t handlerPLL16MHz            = {0};
 MCO1_Handler_t handlerMCO1                = {0};
 
 // Handlers de los pines
@@ -151,9 +150,28 @@ int main(void){
 	inicializacion();
 	LCD_configPin();
 	LCD_Init();
+	LCD_Fill_Color(BLUE);
+	delay_ms(5000);
 	LCD_Fill_Color(RED);
-	while(1){
 
+	while(1){
+		// cuando el usuario presione una de las siguientes teclas se activara su funcion respectiva
+		if(usartDataReceived != '\0'){
+
+			bufferReception[counterReception] = usartDataReceived;
+			counterReception++;
+			if(usartDataReceived == '@'){
+				stringComplete = true;
+				bufferReception[counterReception] ='\0';
+				counterReception = 0;
+			}
+			usartDataReceived = '\0';
+		}
+		//analizamos la cadena de datos obtenida
+		if(stringComplete){
+			parseCommands(bufferReception);
+			stringComplete = false;
+		}
 
 	} // Fin while
 } //Fin funcion main
@@ -163,8 +181,8 @@ int main(void){
 void init_hardware (void){
 
 /*Configuramos la velocidad del micro*/
-	handlerPLL100MHz.FrecuenciaClock  = PLL_CLOCK_16MHz;
-	configPLL(&handlerPLL100MHz);
+	handlerPLL16MHz.FrecuenciaClock  = PLL_CLOCK_16MHz;
+	configPLL(&handlerPLL16MHz);
 	config_SysTick_ms(SYSTICK_LOAD_VALUE_16MHz_1ms);
 
 
@@ -184,27 +202,27 @@ void init_hardware (void){
 	//Si el timer esta a 100MHz deben usarse la Speed que termina en _PLL100_100us
 	handlerBlinkyTimer.ptrTIMx                              = TIM2;
 	handlerBlinkyTimer.TIMx_Config.TIMx_mode                = BTIMER_MODE_UP ;
-	handlerBlinkyTimer.TIMx_Config.TIMx_speed               = BTIMER_SPEED_PLL100_100us;
-	handlerBlinkyTimer.TIMx_Config.TIMx_period              = 2500;
+	handlerBlinkyTimer.TIMx_Config.TIMx_speed               = BTIMER_SPEED_1ms;
+	handlerBlinkyTimer.TIMx_Config.TIMx_period              = 250;
 	handlerBlinkyTimer.TIMx_Config.TIMx_interruptEnable     = BTIMER_INTERRUPT_ENABLE;
 	BasicTimer_Config(&handlerBlinkyTimer);
 
 /* Configuracion de la comunicacion serial USART*/
 	//PINTX del usart para Usart6(PA11 AF8) Para Usart2(PA2 AF7)
 	handlerPinTX.pGPIOx = GPIOA;
-	handlerPinTX.GPIO_PinConfig.GPIO_PinNumber           = PIN_11;
+	handlerPinTX.GPIO_PinConfig.GPIO_PinNumber           = PIN_2;
 	handlerPinTX.GPIO_PinConfig.GPIO_PinMode             = GPIO_MODE_ALTFN;
-	handlerPinTX.GPIO_PinConfig.GPIO_PinAltFunMode       = AF8;
+	handlerPinTX.GPIO_PinConfig.GPIO_PinAltFunMode       = AF7;
 	GPIO_Config(&handlerPinTX);
 	//PINRX del usart para Usart6(PA12 AF8) Para Usart2(PA3 AF7)
 	handlerPinRX.pGPIOx = GPIOA;
-	handlerPinRX.GPIO_PinConfig.GPIO_PinNumber           = PIN_12;
+	handlerPinRX.GPIO_PinConfig.GPIO_PinNumber           = PIN_3;
 	handlerPinRX.GPIO_PinConfig.GPIO_PinMode             = GPIO_MODE_ALTFN;
-	handlerPinRX.GPIO_PinConfig.GPIO_PinAltFunMode       = AF8;
+	handlerPinRX.GPIO_PinConfig.GPIO_PinAltFunMode       = AF7;
 	GPIO_Config(&handlerPinRX);
-	//cuando el micro este a 100MHz deben usarse los baudrate terminados en _100MHz
-	UsartComm.ptrUSARTx                                     = USART6;
-	UsartComm.USART_Config.USART_baudrate                   = USART_BAUDRATE_115200_100MHz;
+	//USART a 16MHz
+	UsartComm.ptrUSARTx                                     = USART2;
+	UsartComm.USART_Config.USART_baudrate                   = USART_BAUDRATE_115200;
 	UsartComm.USART_Config.USART_datasize                   = USART_DATASIZE_8BIT;
 	UsartComm.USART_Config.USART_mode                       = USART_MODE_RXTX;
 	UsartComm.USART_Config.USART_parity                     = USART_PARITY_NONE;

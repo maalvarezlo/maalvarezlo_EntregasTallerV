@@ -70,7 +70,7 @@ void LCD_configPin(void){
 	//SPI
 	handlerSPI.ptrSPIx                         = SPI1;
 	handlerSPI.SPI_Config.SPI_mode             = SPI_MODE_3;
-	handlerSPI.SPI_Config.SPI_baudrate         = SPI_BAUDRATE_FPCLK_4;
+	handlerSPI.SPI_Config.SPI_baudrate         = SPI_BAUDRATE_FPCLK_2;
 	handlerSPI.SPI_Config.SPI_datasize         = SPI_DATASIZE_8_BIT;
 	handlerSPI.SPI_Config.SPI_fullDupplexEnable         = SPI_FULL_DUPPLEX;
 	spi_config(handlerSPI);
