@@ -115,7 +115,7 @@ arm_cfft_radix4_instance_f32 configRadix4_f32;
 arm_status statusInitFFT = ARM_MATH_ARGUMENT_ERROR;
 uint16_t fftSize = 1024;
 
-
+uint32_t contador  = 0;
 
 //acelerometro
 #define ACCEL_ADDRESS          	 0x1D
@@ -139,6 +139,7 @@ void Press_y(void);
 void Press_z(void);
 void Press_d(void);
 void inicializacion(void);
+void LCD_Fill_Image(void);
 
 
 
@@ -147,31 +148,22 @@ int main(void){
 	SCB->CPACR |= (0xF <<20);
 /*Inicialización de todos los elementos del sistema*/
 	init_hardware();
-	inicializacion();
+//	inicializacion();
 	LCD_configPin();
 	LCD_Init();
 	LCD_Fill_Color(WHITE);
-	delay_ms(5000);
+	delay_ms(2000);
 	LCD_Fill_Color(BLACK);
+	LCD_Fill_Square(100,100,WHITE);
+	delay_ms(2000);
+	LCD_Fill_Color(BLACK);
+	delay_ms(2000);
+	writeMsg(&UsartComm, "1");
+	LCD_Fill_Image();
+
+
 
 	while(1){
-		// cuando el usuario presione una de las siguientes teclas se activara su funcion respectiva
-		if(usartDataReceived != '\0'){
-
-			bufferReception[counterReception] = usartDataReceived;
-			counterReception++;
-			if(usartDataReceived == '@'){
-				stringComplete = true;
-				bufferReception[counterReception] ='\0';
-				counterReception = 0;
-			}
-			usartDataReceived = '\0';
-		}
-		//analizamos la cadena de datos obtenida
-		if(stringComplete){
-			parseCommands(bufferReception);
-			stringComplete = false;
-		}
 
 	} // Fin while
 } //Fin funcion main
@@ -506,6 +498,31 @@ void Press_d(void){
 	}
 }//FIN PRESS D
 
+//DIbujar imagen que llega por usart
+void LCD_Fill_Image(void){
+	uint16_t i;
+	LCD_SetWindow(0, 0, LCD_WIDTH, LCD_HEIGHT);
+
+	uint16_t j;
+	for (i = 0; i < LCD_WIDTH; i++){
+		for (j = 0; j < LCD_HEIGHT; j++) {
+			while (usartDataReceived == '\0') {
+				__NOP();
+			}
+			if (usartDataReceived == '\001') {
+				uint16_t color = BLACK;
+				uint8_t data[] = { color >> 8, color & 0xFF };
+				LCD_WriteData_Word(data, sizeof(data));
+				usartDataReceived = '\0';
+			} else if (usartDataReceived == '\002') {
+				uint16_t color = WHITE;
+				uint8_t data[] = { color >> 8, color & 0xFF };
+				LCD_WriteData_Word(data, sizeof(data));
+				usartDataReceived = '\0';
+			}
+		}
+	}
+}
 
 // aca se ejecuta el Blinky
 void BasicTimer2_Callback(void){
@@ -517,6 +534,8 @@ void BasicTimer2_Callback(void){
 //recibir datos con el usart
 void usart2Rx_Callback(void){
 	usartDataReceived = getRxData();
+	contador++;
+
 }
 
 

@@ -251,4 +251,21 @@ void LCD_Fill_Color(uint16_t color){
 	}
 }
 
+//dibujar cuadrado en el centro de la pantalla
+void LCD_Fill_Square(uint16_t WIDTH, uint16_t HEIGHT, uint16_t color){
+	uint16_t i;
+	LCD_SetWindow((160-WIDTH/2), (120-HEIGHT/2), (160+WIDTH/2), (120+HEIGHT/2));
+
+	uint16_t j;
+	for (i = 0; i < WIDTH; i++){
+		for (j = 0; j < HEIGHT; j++) {
+			uint8_t data[] = {color >> 8, color & 0xFF};
+			LCD_WriteData_Word(data, sizeof(data));
+		}
+	}
+}
+
+
+
+
 

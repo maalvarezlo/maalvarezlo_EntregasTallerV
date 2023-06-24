@@ -48,6 +48,8 @@ void LCD_Init(void);
 void LCD_SetWindow(uint16_t x_start, uint16_t y_start, uint16_t x_end, uint16_t  y_end);
 void LCD_Fill_Color(uint16_t color);
 void LCD_configPin(void);
+void LCD_Fill_Square(uint16_t WIDTH, uint16_t HEIGHT, uint16_t color);
+
 
 
 
