@@ -158,12 +158,16 @@ int main(void){
 	delay_ms(2000);
 	LCD_Fill_Color(BLACK);
 	delay_ms(2000);
-	writeMsg(&UsartComm, "1");
-	LCD_Fill_Image();
+//	LCD_Fill_Image();
 
 
 
 	while(1){
+
+		LCD_Fill_Image();
+		delay_ms(2000);
+		LCD_Fill_Color(BLACK);
+		delay_ms(2000);
 
 	} // Fin while
 } //Fin funcion main
@@ -500,6 +504,7 @@ void Press_d(void){
 
 //DIbujar imagen que llega por usart
 void LCD_Fill_Image(void){
+	writeMsg(&UsartComm, "1");
 	uint16_t i;
 	LCD_SetWindow(0, 0, LCD_WIDTH, LCD_HEIGHT);
 
