@@ -157,6 +157,14 @@ void USART_Config(USART_Handler_t *ptrUsartHandler){
 		ptrUsartHandler->ptrUSARTx->BRR = 0x008B;
 	}
 
+	else if(ptrUsartHandler->USART_Config.USART_baudrate == USART_BAUDRATE_230400){
+		// Escriba acá su código y los comentarios que faltan
+		// El valor a cargar es 4.34 -> Mantiza = 4,fraction = 0.34
+		// Mantiza = 4 = 0x4, fraction = 16 * 0.34 = 5
+		// Valor a cargar 0x045
+		ptrUsartHandler->ptrUSARTx->BRR = 0x0045;
+	}
+
 	// Ver tabla de valores (Tabla 73), Frec = 80MHz
 	else if(ptrUsartHandler->USART_Config.USART_baudrate == USART_BAUDRATE_9600_80MHz){
 		// Escriba acá su código y los comentarios que faltan

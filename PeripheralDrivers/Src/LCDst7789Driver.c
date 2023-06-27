@@ -35,16 +35,16 @@ void LCD_configPin(void){
 	handlerCLK.GPIO_PinConfig.GPIO_PinAltFunMode       = AF5;
 	GPIO_Config(&handlerCLK);
 
-	handlerCS.pGPIOx = GPIOB;
-	handlerCS.GPIO_PinConfig.GPIO_PinNumber           = PIN_15;
+	handlerCS.pGPIOx = GPIOA;
+	handlerCS.GPIO_PinConfig.GPIO_PinNumber           = PIN_8;
 	handlerCS.GPIO_PinConfig.GPIO_PinMode             = GPIO_MODE_OUT;
 	handlerCS.GPIO_PinConfig.GPIO_PinOPType           = GPIO_OTYPE_PUSHPULL;
 	handlerCS.GPIO_PinConfig.GPIO_PinSpeed            = GPIO_OSPEED_HIGH;
 	handlerCS.GPIO_PinConfig.GPIO_PinPuPdControl      = GPIO_PUPDR_NOTHING;
 	GPIO_Config(&handlerCS);
 
-	handlerDC.pGPIOx = GPIOB;
-	handlerDC.GPIO_PinConfig.GPIO_PinNumber           = PIN_1;
+	handlerDC.pGPIOx = GPIOA;
+	handlerDC.GPIO_PinConfig.GPIO_PinNumber           = PIN_9;
 	handlerDC.GPIO_PinConfig.GPIO_PinMode             = GPIO_MODE_OUT;
 	handlerDC.GPIO_PinConfig.GPIO_PinOPType           = GPIO_OTYPE_PUSHPULL;
 	handlerDC.GPIO_PinConfig.GPIO_PinSpeed            = GPIO_OSPEED_HIGH;
@@ -52,7 +52,7 @@ void LCD_configPin(void){
 	GPIO_Config(&handlerDC);
 
 	handlerRST.pGPIOx = GPIOB;
-	handlerRST.GPIO_PinConfig.GPIO_PinNumber           = PIN_2;
+	handlerRST.GPIO_PinConfig.GPIO_PinNumber           = PIN_6;
 	handlerRST.GPIO_PinConfig.GPIO_PinMode             = GPIO_MODE_OUT;
 	handlerRST.GPIO_PinConfig.GPIO_PinOPType           = GPIO_OTYPE_PUSHPULL;
 	handlerRST.GPIO_PinConfig.GPIO_PinSpeed            = GPIO_OSPEED_HIGH;

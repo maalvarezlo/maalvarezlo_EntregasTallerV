@@ -18,6 +18,7 @@
 #define USART_BAUDRATE_9600		       0
 #define USART_BAUDRATE_19200	       1
 #define USART_BAUDRATE_115200	       2
+#define USART_BAUDRATE_230400	       3
 
 #define USART_BAUDRATE_9600_80MHz	   3
 #define USART_BAUDRATE_19200_80MHz	   4

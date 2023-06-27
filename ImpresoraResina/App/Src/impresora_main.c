@@ -32,21 +32,22 @@
 /* Definicion de los elementos del sistema */
 /*Handler PLL para la velocidad del micro*/
 PLL_Handler_t handlerPLL16MHz            = {0};
-MCO1_Handler_t handlerMCO1                = {0};
 
 // Handlers de los pines
 GPIO_Handler_t handlerLEDBlinky          = {0};
-GPIO_Handler_t handlerpinEXTI            = {0};
-GPIO_Handler_t handlerPinPrueba          = {0};
-GPIO_Handler_t handlerPinPWMZ            = {0};
+GPIO_Handler_t handlerMotorOn              = {0};
+GPIO_Handler_t handlerSTEEP              = {0};
+GPIO_Handler_t handlerDIR                = {0};
+GPIO_Handler_t handlerUV                = {0};
+GPIO_Handler_t handlerFC                = {0};
 
 // Handlers y banderas de los timers
 BasicTimer_Handler_t handlerBlinkyTimer  = {0};
-BasicTimer_Handler_t handler1HzTimer     = {0};
-BasicTimer_Handler_t handler1sTimer      = {0};
-uint8_t banderaMuestreo                  = 1;
-uint16_t numeroMuestreo                  = 0;
-uint16_t infinito                        = 0;
+BasicTimer_Handler_t handlerMotor  = {0};
+
+//EXTIS
+EXTI_Config_t Exti_FinalCarrera            = {0};
+
 
 // Comunicacion USART
 RTC_Handler_t handlerRTC                 = {0};
@@ -72,98 +73,75 @@ unsigned int thirdParameter = 0;
 uint8_t counterReception                 = 0;
 bool stringComplete                      = false;
 
-//Configuracion ADC
-ADC_Config_t adcConfig = {0};
-PWM_Handler_t handlerPWMADC = {0};
-uint8_t seleccionadorADC = 0;
-float32_t señal1[256]  = {0};
-float32_t señal2[256]  = {0};
-uint16_t contadorADC  = 0;
-uint8_t ADCISCOMPLETE = 0;
-uint32_t freqADC = 0;
-
-
-//Configuracion para el I2C
-GPIO_Handler_t handleI2cSDA             = {0};
-GPIO_Handler_t handleI2cSCL             = {0};
-I2C_Handler_t handlerAccelerometer      = {0};
-uint8_t i2cBuffer                       = 0;
-char bufferx[64]                        = {0};
-char buffery[64]                        = {0};
-char bufferz[64]                        = {0};
-float32_t ArregloX[1024]                = {0};
-float32_t ArregloY[1024]               = {0};
-float32_t ArregloZ[1024]               = {0};
-uint16_t numerodatos                   = 1024;
-
-//FFT
-//Elementos para generar una señal
-#define ACEL_DATA_SIZE    1024   			//Tamaño del arrlego de datos
-float32_t acelSignal[ACEL_DATA_SIZE];
-float32_t transformedSignal[ACEL_DATA_SIZE];
-float32_t FFTFinal[ACEL_DATA_SIZE];
-float32_t* ptrSineSingal;
-float32_t dt =	0.0;			//Periodo de muestreo, en este caso sera (1/fs)
-float32_t maximo = 0;
-uint16_t indiceFFT = 0;
-float32_t FrecuenciaF = 0;
-
-uint32_t ifftFlag = 0;
-uint32_t doBitReverse = 1;
-arm_rfft_fast_instance_f32 config_Rfft_fast_f32;
-arm_cfft_radix4_instance_f32 configRadix4_f32;
-arm_status statusInitFFT = ARM_MATH_ARGUMENT_ERROR;
-uint16_t fftSize = 1024;
-
+//Variables
+// Variables
+uint16_t PasosTotales = 0;
+double AlturaCapamm = 0;
+double alturaActualmm = 0;
+uint16_t AlturaCapaPasos = 0;
+double alturaActualPasos = 0;
+uint8_t pasosDadosSubiendo = 0;
+uint8_t pasosDadosBajando = 0;
+uint8_t banderaMotor = 0;
+uint8_t DIR = 0;
 uint32_t contador  = 0;
+uint8_t finalcarrera  = 0;
 
-//acelerometro
-#define ACCEL_ADDRESS          	 0x1D
-#define ACCEL_XOUT_L             50
-#define ACCEL_XOUT_H             51
-#define ACCEL_YOUT_L             52
-#define ACCEL_YOUT_H             53
-#define ACCEL_ZOUT_L             54
-#define ACCEL_ZOUT_H             55
-#define BW_RATE                  44
-#define POWER_CTL                45
-#define WHO_AM_I                 0
+
 
 
 //Definiendo las Funciones
 void init_hardware (void);
 void parseCommands(char *ptrBufferReception);
-void Press_r(void);
-void Press_x(void);
-void Press_y(void);
-void Press_z(void);
-void Press_d(void);
 void inicializacion(void);
+void SecuenciaMotor (uint16_t);
 void LCD_Fill_Image(void);
 
 
-
 int main(void){
-//Activamos el coprocesador Matematico
-	SCB->CPACR |= (0xF <<20);
-/*Inicialización de todos los elementos del sistema*/
+	//Activamos el coprocesador Matematico
+	SCB->CPACR |= (0xF << 20);
+	/*Inicialización de todos los elementos del sistema*/
 	init_hardware();
-//	inicializacion();
+	//	inicializacion();
 	LCD_configPin();
 	LCD_Init();
 	LCD_Fill_Color(WHITE);
-	delay_ms(2000);
+	GPIO_WritePin(&handlerUV, SET);
+	delay_ms(4000);
+	GPIO_WritePin(&handlerUV, RESET);
 	LCD_Fill_Color(BLACK);
-//	LCD_Fill_Square(100,100,WHITE);
 	delay_ms(2000);
+
+	/* definiendo la altura de capa en pasos*/
+	/* Teniendo en cuenta que cada paso del motor mueve la cama una altura de 0.4mm, es necesario que la altura de capa deseada
+	 * sea multiplo de 0.04mm*/
+	AlturaCapamm = 0.12;
+	/* Para calcular los pasos de está altura de capa (teniendo en cuenta el motor y la varilla roscada*/
+	AlturaCapaPasos = (AlturaCapamm*200)/8;
+
+	// creamos un while para que el motor baje hasta que choque con el final de carrera, este será nuestra 0
+	while(finalcarrera == 0){
+
+		GPIO_WritePin(&handlerMotorOn, SET);
+		GPIO_WritePin(&handlerDIR, SET);
+		if(banderaMotor == 1){
+			GPIOxTooglePin(&handlerSTEEP);
+			banderaMotor = 0;
+		}
+	}
+	//Apagams los pines para que empiece la secuencia de cada capa y esperamos 3s para iniciar
+	GPIO_WritePin(&handlerMotorOn, RESET);
+	GPIO_WritePin(&handlerDIR, RESET);
+	delay_ms(3000);
 
 	while(1){
-
-		LCD_Fill_Image();
-		delay_ms(2000);
-		LCD_Fill_Color(BLACK);
-		delay_ms(2000);
-
+		// MOTOR y LCD
+		DIR = GPIO_ReadPin(&handlerDIR);
+		if (banderaMotor == 1) {
+			SecuenciaMotor(AlturaCapaPasos);
+			banderaMotor = 0;
+		}
 	} // Fin while
 } //Fin funcion main
 
@@ -176,20 +154,65 @@ void init_hardware (void){
 	configPLL(&handlerPLL16MHz);
 	config_SysTick_ms(SYSTICK_LOAD_VALUE_16MHz_1ms);
 
-
+	/****************************************************PINES*************************************************************************/
 /*Configuracion del LED del blinky en el puesto PH1 */
-	handlerLEDBlinky.pGPIOx = GPIOH;
+	handlerLEDBlinky.pGPIOx                                  = GPIOH;
 	handlerLEDBlinky.GPIO_PinConfig.GPIO_PinNumber           = PIN_1;
 	handlerLEDBlinky.GPIO_PinConfig.GPIO_PinMode             = GPIO_MODE_OUT;
 	handlerLEDBlinky.GPIO_PinConfig.GPIO_PinOPType           = GPIO_OTYPE_PUSHPULL;
 	handlerLEDBlinky.GPIO_PinConfig.GPIO_PinSpeed            = GPIO_OSPEED_FAST;
 	handlerLEDBlinky.GPIO_PinConfig.GPIO_PinPuPdControl      = GPIO_PUPDR_NOTHING;
-
 	GPIO_Config(&handlerLEDBlinky);
 	GPIO_WritePin(&handlerLEDBlinky, SET);
 
+	/*Configuracion del PIN que controla el final de carrera en el puesto PC5 */
+	handlerFC.pGPIOx                                  = GPIOC;
+	handlerFC.GPIO_PinConfig.GPIO_PinNumber           = PIN_5;
+	handlerFC.GPIO_PinConfig.GPIO_PinMode             = GPIO_MODE_IN;
+	handlerFC.GPIO_PinConfig.GPIO_PinOPType           = GPIO_OTYPE_PUSHPULL;
+	handlerFC.GPIO_PinConfig.GPIO_PinSpeed            = GPIO_OSPEED_FAST;
+	handlerFC.GPIO_PinConfig.GPIO_PinPuPdControl      = GPIO_PUPDR_NOTHING;
+	GPIO_Config(&handlerFC);
 
-/* Configuracion del TIM2 para que haga un blinky cada 250ms*/
+	/*Configuracion del PIN que controla los pasos del motor en el puesto PC13 */
+	handlerSTEEP.pGPIOx                                  = GPIOC;
+	handlerSTEEP.GPIO_PinConfig.GPIO_PinNumber           = PIN_13;
+	handlerSTEEP.GPIO_PinConfig.GPIO_PinMode             = GPIO_MODE_OUT;
+	handlerSTEEP.GPIO_PinConfig.GPIO_PinOPType           = GPIO_OTYPE_PUSHPULL;
+	handlerSTEEP.GPIO_PinConfig.GPIO_PinSpeed            = GPIO_OSPEED_FAST;
+	handlerSTEEP.GPIO_PinConfig.GPIO_PinPuPdControl      = GPIO_PUPDR_NOTHING;
+	GPIO_Config(&handlerSTEEP);
+
+	/*Configuracion del PIN que controla el encendido del motor en el puesto PC1 */
+	handlerMotorOn.pGPIOx                                  = GPIOC;
+	handlerMotorOn.GPIO_PinConfig.GPIO_PinNumber           = PIN_1;
+	handlerMotorOn.GPIO_PinConfig.GPIO_PinMode             = GPIO_MODE_OUT;
+	handlerMotorOn.GPIO_PinConfig.GPIO_PinOPType           = GPIO_OTYPE_PUSHPULL;
+	handlerMotorOn.GPIO_PinConfig.GPIO_PinSpeed            = GPIO_OSPEED_FAST;
+	handlerMotorOn.GPIO_PinConfig.GPIO_PinPuPdControl      = GPIO_PUPDR_NOTHING;
+	GPIO_Config(&handlerMotorOn);
+
+	/*Configuracion del PIN que controla la direccion del motor en el puesto PC2 */
+	handlerDIR.pGPIOx                                  = GPIOC;
+	handlerDIR.GPIO_PinConfig.GPIO_PinNumber           = PIN_2;
+	handlerDIR.GPIO_PinConfig.GPIO_PinMode             = GPIO_MODE_OUT;
+	handlerDIR.GPIO_PinConfig.GPIO_PinOPType           = GPIO_OTYPE_PUSHPULL;
+	handlerDIR.GPIO_PinConfig.GPIO_PinSpeed            = GPIO_OSPEED_FAST;
+	handlerDIR.GPIO_PinConfig.GPIO_PinPuPdControl      = GPIO_PUPDR_NOTHING;
+	GPIO_Config(&handlerDIR);
+	GPIO_WritePin(&handlerDIR, RESET);
+
+		/*Configuracion del PIN que controla la iluminacion UV en el puesto PB7 */
+	handlerUV.pGPIOx                                  = GPIOB;
+	handlerUV.GPIO_PinConfig.GPIO_PinNumber           = PIN_7;
+	handlerUV.GPIO_PinConfig.GPIO_PinMode             = GPIO_MODE_OUT;
+	handlerUV.GPIO_PinConfig.GPIO_PinOPType           = GPIO_OTYPE_PUSHPULL;
+	handlerUV.GPIO_PinConfig.GPIO_PinSpeed            = GPIO_OSPEED_FAST;
+	handlerUV.GPIO_PinConfig.GPIO_PinPuPdControl      = GPIO_PUPDR_NOTHING;
+	GPIO_Config(&handlerUV);
+
+/*****************************************************TIMERS**********************************************************/
+	/* Configuracion del TIM2 para que haga un blinky cada 250ms*/
 	//Si el timer esta a 100MHz deben usarse la Speed que termina en _PLL100_100us
 	handlerBlinkyTimer.ptrTIMx                              = TIM2;
 	handlerBlinkyTimer.TIMx_Config.TIMx_mode                = BTIMER_MODE_UP ;
@@ -198,7 +221,21 @@ void init_hardware (void){
 	handlerBlinkyTimer.TIMx_Config.TIMx_interruptEnable     = BTIMER_INTERRUPT_ENABLE;
 	BasicTimer_Config(&handlerBlinkyTimer);
 
-/* Configuracion de la comunicacion serial USART*/
+	/* Configuracion del TIM3 configurar el STEEP del Motor cada 1ms*/
+	handlerMotor.ptrTIMx                              = TIM3;
+	handlerMotor.TIMx_Config.TIMx_mode                = BTIMER_MODE_UP ;
+	handlerMotor.TIMx_Config.TIMx_speed               = BTIMER_SPEED_1ms;
+	handlerMotor.TIMx_Config.TIMx_period              = 5;
+	handlerMotor.TIMx_Config.TIMx_interruptEnable     = BTIMER_INTERRUPT_ENABLE;
+	BasicTimer_Config(&handlerMotor);
+
+	/************************************************** EXTI******************************************************/
+	// Configurando la interrucion del encoder al girar
+	Exti_FinalCarrera.edgeType                                = EXTERNAL_INTERRUPT_RISING_EDGE;
+	Exti_FinalCarrera.pGPIOHandler                            = &handlerFC;
+	extInt_Config(&Exti_FinalCarrera);
+
+	/**************************************************USART******************************************************/
 	//PINTX del usart para Usart6(PA11 AF8) Para Usart2(PA2 AF7)
 	handlerPinTX.pGPIOx = GPIOA;
 	handlerPinTX.GPIO_PinConfig.GPIO_PinNumber           = PIN_2;
@@ -248,36 +285,7 @@ void parseCommands(char *ptrBufferReception){
 		writeMsg(&UsartComm, "- Escribe el comando \"initFFT\" para inicializar la funcion FFT \n");
 		writeMsg(&UsartComm, "- Escribe el comando \"FFT\" para tomar  todos los datos del acelerometro, y mostrar la frecuencia fundamental \n");
 	}
-	//comando para cambiar el reloj del MCO1
-	else if(strcmp(cmd, "relojMCO1") == 0){
-		if(firstParameter == 0){
-			handlerMCO1.Reloj = firstParameter;
-			configMCO1(&handlerMCO1);
-			sprintf(bufferMsj, "El MCO1 se configuró en el HSI \n");
-			writeMsg(&UsartComm, bufferMsj);
-		} else if(firstParameter == 1){
-			handlerMCO1.Reloj = firstParameter;
-			configMCO1(&handlerMCO1);
-			sprintf(bufferMsj, "El MCO1 se configuró en el LSE \n");
-			writeMsg(&UsartComm, bufferMsj);
-		} else if(firstParameter == 2){
-			handlerMCO1.Reloj = firstParameter;
-			configMCO1(&handlerMCO1);
-			sprintf(bufferMsj, "El MCO1 se configuró en el PLL \n");
-			writeMsg(&UsartComm, bufferMsj);
-		}
-	}
-	//comando para cambiar el preescaler del MCO1
-	else if(strcmp(cmd, "preescalerMCO1") == 0){
-		if(firstParameter < 6 && firstParameter > 0){
-			handlerMCO1.Preescaler = firstParameter;
-			configMCO1(&handlerMCO1);
-			sprintf(bufferMsj, "El preescaler del MCO1 se configuró a %u \n",firstParameter);
-			writeMsg(&UsartComm, bufferMsj);
-		} else{
-			writeMsg(&UsartComm, "El preescaler seleccionado no es valido, debe ser un valor entre 1 y 5 \n");
-		}
-	}
+
 	//RTC, comando para actualizar la hora
 	else if(strcmp(cmd, "actualizarhora") == 0){
 		if(firstParameter > 23 || secondParameter > 59 || thirdParameter > 59 ){
@@ -302,109 +310,6 @@ void parseCommands(char *ptrBufferReception){
 		sprintf(bufferMsj, "La hora actual es %u:%u:%u \n \n", horas, minutos, segundos );
 		writeMsg(&UsartComm, bufferMsj);
 	}
-	//RTC, comando para actualizar la fecha actual
-	else if(strcmp(cmd, "actualizarfecha") == 0){
-		if(firstParameter > 30 || secondParameter > 12 || thirdParameter > 99 ){
-			writeMsg(&UsartComm, "Valores erroneos, por favor escriba la fecha verdadera \n \n");
-		} else{
-			handlerRTC.RTC_Config.NumeroDia = firstParameter;
-			handlerRTC.RTC_Config.Mes= secondParameter;
-			handlerRTC.RTC_Config.Año = thirdParameter;
-			configRTC(&handlerRTC);
-			sprintf(bufferMsj, "Se actualizó la fecha \ndia:%u  mes:%u  año:%u \n" , firstParameter, secondParameter, thirdParameter+2000);
-			writeMsg(&UsartComm, bufferMsj);
-			sprintf(bufferMsj, "la fecha es %u/%u/%u \n \n" , firstParameter, secondParameter, thirdParameter+2000);
-			writeMsg(&UsartComm, bufferMsj);
-		}
-	}
-	//RTC, comando para ver la fecha actual
-	else if(strcmp(cmd, "fechaactual") == 0){
-		dato = cargarRTC();
-		dia = dato[0];
-		mes = dato[1];
-		año = dato[2];
-		sprintf(bufferMsj, "La fecha actual es %u/%u/%u \n \n", dia, mes, año+2000);
-		writeMsg(&UsartComm, bufferMsj);
-	}
-	//comando para actualizar la frecuencia de sampleo del ADC
-	else if(strcmp(cmd, "actualizarsamp") == 0){
-		if((firstParameter>=800)&&(firstParameter<=1500)){
-			freqADC = (uint16_t)(((float)(1/firstParameter))*10000);
-			updateFrequency(&handlerPWMADC, freqADC);
-			updateDuttyCycle(&handlerPWMADC, freqADC/2);
-			sprintf(bufferMsj, "La nueva frecuencia de sampleo se establecio en %u Hz \n", firstParameter*10);
-			writeMsg(&UsartComm, bufferMsj);
-			firstParameter = 0;
-		}
-		else{
-			writeMsg(&UsartComm, "Incorrect frequency, must be an integer value between 800 Hz and 3000 Hz \n");
-		}
-	}
-	// comando para sacar los datos de las dos señales del ADC
-	else if(strcmp(cmd, "adc") == 0){
-		startPwmSignal(&handlerPWMADC);
-		writeMsg(&UsartComm, "Tomando datos \n");
-		ADCISCOMPLETE = 0;
-		while(ADCISCOMPLETE){
-			__NOP();
-		}
-		int i = 0;
-			for(i = 1; i < 256; i++){
-				sprintf(bufferMsj, " señal1 = %#.4f  ;  señal2 = %#.4f \n", señal1[i], señal2[i]);
-				writeMsg(&UsartComm, bufferMsj);
-			}
-		}
-
-	//ACELEROMETRO, reset
-	else if(strcmp(cmd, "resetacel") == 0){
-		Press_r();
-		Press_x();
-		Press_y();
-		Press_z();
-	}
-	//se inicializa la funcion de FFT
-	else if(strcmp(cmd, "initFFT") == 0){
-		statusInitFFT = arm_rfft_fast_init_f32(&config_Rfft_fast_f32, fftSize);
-
-		if(statusInitFFT == ARM_MATH_SUCCESS){
-			sprintf(bufferMsj, "Fourier initialization ... SUCCESS! \n");
-			writeMsg(&UsartComm, bufferMsj);
-		}
-	}
-
-	// se toman los datos y se imprime la frecuencia obtenida por el FFT
-	else if (strcmp(cmd, "FFT") == 0){
-		sprintf(bufferMsj, "Tomando los datos con el acelerometro, espere 5 segundos \n");
-		writeMsg(&UsartComm, bufferMsj);
-		Press_d();
-
-		int i = 0;
-		int j = 0;
-		sprintf(bufferMsj, "Iniciando FFT \n");
-		writeMsg(&UsartComm, bufferMsj);
-		if(statusInitFFT == ARM_MATH_SUCCESS){
-			arm_rfft_fast_f32(&config_Rfft_fast_f32, ArregloZ, transformedSignal, ifftFlag);
-			arm_abs_f32(transformedSignal, acelSignal, fftSize);
-
-			for( i = 0; i < fftSize; i++){
-				if(i % 2){
-					FFTFinal[i] = acelSignal[i];
-				}
-			}
-		}
-		maximo = FFTFinal[0];
-		for(j = 0; j < fftSize; j++ ){
-			if(maximo < FFTFinal[j]){
-				maximo = FFTFinal[j];
-				indiceFFT = j;
-			}
-		}
-		sprintf(bufferMsj, "el subindice de la frecuencia fundamental es %u \n", indiceFFT);
-		writeMsg(&UsartComm, bufferMsj);
-		FrecuenciaF = (float)(indiceFFT*200/(fftSize));
-		sprintf(bufferMsj, "La frecuencia es %#.4f Hz \n", FrecuenciaF);
-		writeMsg(&UsartComm, bufferMsj);
-	}
 
 	else{
 		writeMsg(&UsartComm, "COMANDO INVÁLIDO \n");
@@ -414,8 +319,8 @@ void parseCommands(char *ptrBufferReception){
 
 void inicializacion(void){
 	sprintf(bufferMsj,
-			"Hola, soy el MCU de Mateo y tengo una frecuencia de %d Hz \n ",
-			getConfigPLL());
+	"Hola, soy el MCU de Mateo y tengo una frecuencia de %d Hz \n ",
+	getConfigPLL());
 	writeMsg(&UsartComm, bufferMsj);
 	writeMsg(&UsartComm,
 			"- Escribe el comando help para mostrar este menu cuando desees.\n");
@@ -446,56 +351,46 @@ void inicializacion(void){
 }
 
 
-void Press_r(void){
-	sprintf(bufferMsj, "PWR_MGMT_1 reset\n");
-	writeMsg(&UsartComm, bufferMsj);
-	i2c_writeSingleRegister(&handlerAccelerometer, POWER_CTL , 0x2D);
-}//FIN PRESS R
-
-void Press_x(void){
-	uint8_t AccelX_low =  i2c_readSingleRegister(&handlerAccelerometer, ACCEL_XOUT_L);
-	uint8_t AccelX_high = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_XOUT_H);
-	int16_t AccelX = AccelX_high << 8 | AccelX_low;
-	sprintf(bufferMsj, "AccelX = %.2f m/s² \n", (AccelX/210.f)*9.78);
-	writeMsg(&UsartComm, bufferMsj);
-}//FIN PRESS X
-
-void Press_y(void){
-	uint8_t AccelY_low = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_YOUT_L);
-	uint8_t AccelY_high = i2c_readSingleRegister(&handlerAccelerometer,ACCEL_YOUT_H);
-	int16_t AccelY = AccelY_high << 8 | AccelY_low;
-	sprintf(bufferMsj, "AccelY = %.2f m/s² \n", (AccelY/210.f)*9.78);
-	writeMsg(&UsartComm, bufferMsj);
-}//FIN PRESS Y
-
-void Press_z(void){
-	uint8_t AccelZ_low = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_ZOUT_L);
-	uint8_t AccelZ_high = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_ZOUT_H);
-	int16_t AccelZ = AccelZ_high << 8 | AccelZ_low;
-	sprintf(bufferMsj, "AccelZ = %.2f m/s² \n", (AccelZ/210.f)*9.78);
-	writeMsg(&UsartComm, bufferMsj);
-}//FIN PRESS Z
-
-
-
-void Press_d(void){
-	banderaMuestreo = 1;
-	numeroMuestreo = 0;
-	while (numeroMuestreo < numerodatos) {
-
-		uint8_t AccelZ_low = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_ZOUT_L);
-		uint8_t AccelZ_high = i2c_readSingleRegister(&handlerAccelerometer, ACCEL_ZOUT_H);
-		int16_t AccelZ = AccelZ_high << 8 | AccelZ_low;
-
-		ArregloZ[numeroMuestreo] = (AccelZ / 210.f) * 9.78;
+// El motor subirá 200 pasos (8mm) y bajará el numero de pasos determiando para que quede la diferencia de la altura de capa
+void SecuenciaMotor(uint16_t AlturadeCapa){
+	if(GPIO_ReadPin(&handlerDIR) == RESET){
+		//Encender motor
+		GPIO_WritePin(&handlerMotorOn, SET);
+		//mover hacia arriba un numeros de 200 pasos para una altura total de 8mm
+		if (pasosDadosSubiendo < 200) {
+			GPIOxTooglePin(&handlerSTEEP);
+			pasosDadosSubiendo++;
+		}
+		else {
+			GPIO_WritePin(&handlerDIR, SET);
+			pasosDadosSubiendo = 0;
+		}
 	}
-	banderaMuestreo = 0;
-	numeroMuestreo = 0;
-	for (int i = 0; i < numerodatos; i++) {
-		sprintf(bufferMsj, " Z = %.2f m/s²  | %u \n", ArregloZ[i], i);
-		writeMsg(&UsartComm, bufferMsj);
+	else if (GPIO_ReadPin(&handlerDIR) == SET){
+
+		if (pasosDadosBajando < (200-AlturadeCapa)){
+			GPIOxTooglePin(&handlerSTEEP);
+			pasosDadosBajando++;
+		}
+		else {
+			GPIO_WritePin(&handlerDIR, RESET);
+			pasosDadosBajando = 0;
+			alturaActualPasos = alturaActualPasos+AlturadeCapa;
+			//Apagar motor
+			GPIO_WritePin(&handlerMotorOn, RESET);
+			/*aca se debe encender la LCD*/
+			LCD_Fill_Image();
+			GPIO_WritePin(&handlerUV, SET);
+			delay_ms(10000);
+			GPIO_WritePin(&handlerUV, RESET);
+			/*aca se debe apagar la LCD*/
+			LCD_Fill_Color(BLACK);
+			delay_ms(500);
+		}
 	}
-}//FIN PRESS D
+	PasosTotales++;
+	alturaActualmm = (alturaActualPasos*8)/200;
+}
 
 //DIbujar imagen que llega por usart
 void LCD_Fill_Image(void){
@@ -530,12 +425,20 @@ void BasicTimer2_Callback(void){
 	GPIOxTooglePin(&handlerLEDBlinky);
 }
 
+void BasicTimer3_Callback(void){
+	banderaMotor = 1;
+}
+
 
 //recibir datos con el usart
 void usart2Rx_Callback(void){
 	usartDataReceived = getRxData();
 	contador++;
+}
 
+//Interurpcion
+void callback_extInt5 (void){
+	finalcarrera = 1; // se levanta una bandera para que se ejecute el codigo de los contadores
 }
 
 
